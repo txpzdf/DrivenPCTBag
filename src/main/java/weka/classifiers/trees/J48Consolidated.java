@@ -532,6 +532,7 @@ TechnicalInformationHandler {
 						Math.log(1 - bagBySampleClassRatioVector[iMostDisfavorClass]));
 			System.out.println("The number of samples to guarantee at least a coverage of " +
 					Utils.doubleToString(100*coverage,0) + "% is " + numberSamples + ".");
+			m_numberSamplesByCoverage = numberSamples;
 			if (numberSamples < 3){
 				numberSamples = 3;
 				System.out.println("(*) Forced the number of samples to be 3!!!");
@@ -540,7 +541,6 @@ TechnicalInformationHandler {
 		} else // m_RMnumberSamplesHowToSet == NumberSamples_FixedValue 
 			// The number of samples has been set by parameter
 			numberSamples = (int)m_RMnumberSamples;
-		m_numberSamplesByCoverage = numberSamples;
 
 		// Calculate the true coverage achieved
 		m_trueCoverage = (double)0.0;
