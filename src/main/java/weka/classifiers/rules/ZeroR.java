@@ -400,29 +400,56 @@ WeightedInstancesHandler, Sourcable, AdditionalMeasureProducer, Summarizable {
 	}
 
 	/**
-	 * Returns number of examples of minority class. 
+	 * Returns whether there are any empty classes or not. 
+	 * 
+	 * @return 1.0 if there are any empty classes or 0.0, if not. 
+	 * 
+	 */
+	public double measureEmptyClass() {
+
+		AttributeStats as = m_data.attributeStats(m_data.classIndex());
+		int[] classCounts = as.nominalCounts;
+		int count = classCounts[Utils.minIndex(classCounts)];
+		if (count == 0)
+			return (double)1.0;
+		else
+			return (double)0.0;
+	}
+
+	/**
+	 * Returns number of examples of minority class
+	 * (discarding empty classes). 
 	 * 
 	 * @return number of examples of minority class.
 	 */
 	public double measureNumMinClass() {
 
+		int count=0;
 		AttributeStats as = m_data.attributeStats(m_data.classIndex());
 		int[] classCounts = as.nominalCounts;
-		int count = classCounts[Utils.minIndex(classCounts)];
+		int i_iMinClass;
+		for(i_iMinClass = 0; ((i_iMinClass < classCounts.length) && (Utils.kthSmallestValue(classCounts, i_iMinClass) == 0)); i_iMinClass++);
+		if(i_iMinClass < classCounts.length)
+			count = Utils.kthSmallestValue(classCounts,i_iMinClass);
 		return (double)count;
 	}
 
 	/**
-	 * Returns percentage of examples of minority class. 
+	 * Returns percentage of examples of minority class
+	 * (discarding empty classes). 
 	 * 
 	 * @return percentage of examples of minority class.
 	 */
 	public double measurePercentMinClass() {
 
+		int count=0;
 		int numInstances = m_data.numInstances();
 		AttributeStats as = m_data.attributeStats(m_data.classIndex());
 		int[] classCounts = as.nominalCounts;
-		int count = classCounts[Utils.minIndex(classCounts)];
+		int i_iMinClass;
+		for(i_iMinClass = 0; ((i_iMinClass < classCounts.length) && (Utils.kthSmallestValue(classCounts, i_iMinClass) == 0)); i_iMinClass++);
+		if(i_iMinClass < classCounts.length)
+			count = Utils.kthSmallestValue(classCounts,i_iMinClass);
 		return (double)count/numInstances*100.0;
 	}
 
@@ -469,6 +496,7 @@ WeightedInstancesHandler, Sourcable, AdditionalMeasureProducer, Summarizable {
 		newVector.addElement("measureNumMissingValuesDataset");
 		newVector.addElement("measurePercentMissingValuesDataset");
 		newVector.addElement("measureNumClasses");
+		newVector.addElement("measureEmptyClass");
 		newVector.addElement("measureNumMinClass");
 		newVector.addElement("measurePercentMinClass");
 		newVector.addElement("measureNumMajClass");
@@ -501,6 +529,8 @@ WeightedInstancesHandler, Sourcable, AdditionalMeasureProducer, Summarizable {
 			return measurePercentMissingValuesDataset();
 		} else if (additionalMeasureName.compareToIgnoreCase("measureNumClasses") == 0) {
 			return measureNumClasses();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureEmptyClass") == 0) {
+			return measureEmptyClass();
 		} else if (additionalMeasureName.compareToIgnoreCase("measureNumMinClass") == 0) {
 			return measureNumMinClass();
 		} else if (additionalMeasureName.compareToIgnoreCase("measurePercentMinClass") == 0) {
