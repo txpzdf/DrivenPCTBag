@@ -417,6 +417,38 @@ WeightedInstancesHandler, Sourcable, AdditionalMeasureProducer, Summarizable {
 	}
 
 	/**
+	 * Returns number of examples of the first class
+	 * 
+	 * @return number of examples of minority class.
+	 */
+	public double measureNumFirstClass() {
+
+		int count=0;
+		AttributeStats as = m_data.attributeStats(m_data.classIndex());
+		int[] classCounts = as.nominalCounts;
+		count = classCounts[0];
+		return (double)count;
+	}
+
+	/**
+	 * Returns index of minority class
+	 * (discarding empty classes). 
+	 * 
+	 * @return index of minority class.
+	 */
+	public double measureMinClassIndex() {
+		
+		AttributeStats as = m_data.attributeStats(m_data.classIndex());
+		int[] classCounts = as.nominalCounts;
+		int i_iMinClass;
+		for(i_iMinClass = 0; ((i_iMinClass < classCounts.length) && (Utils.kthSmallestValue(classCounts, i_iMinClass) == 0)); i_iMinClass++);
+		if(i_iMinClass < classCounts.length)
+			return (double)i_iMinClass;
+		else 
+			return (double)-1;
+	}
+
+	/**
 	 * Returns number of examples of minority class
 	 * (discarding empty classes). 
 	 * 
@@ -497,6 +529,8 @@ WeightedInstancesHandler, Sourcable, AdditionalMeasureProducer, Summarizable {
 		newVector.addElement("measurePercentMissingValuesDataset");
 		newVector.addElement("measureNumClasses");
 		newVector.addElement("measureEmptyClass");
+		newVector.addElement("measureNumFirstClass");
+		newVector.addElement("measureMinClassIndex");
 		newVector.addElement("measureNumMinClass");
 		newVector.addElement("measurePercentMinClass");
 		newVector.addElement("measureNumMajClass");
@@ -531,6 +565,10 @@ WeightedInstancesHandler, Sourcable, AdditionalMeasureProducer, Summarizable {
 			return measureNumClasses();
 		} else if (additionalMeasureName.compareToIgnoreCase("measureEmptyClass") == 0) {
 			return measureEmptyClass();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureNumFirstClass") == 0) {
+			return measureNumFirstClass();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureMinClassIndex") == 0) {
+			return measureMinClassIndex();
 		} else if (additionalMeasureName.compareToIgnoreCase("measureNumMinClass") == 0) {
 			return measureNumMinClass();
 		} else if (additionalMeasureName.compareToIgnoreCase("measurePercentMinClass") == 0) {
