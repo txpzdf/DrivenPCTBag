@@ -1496,6 +1496,35 @@ public class Evaluation implements Serializable, Summarizable, RevisionHandler {
   }
 
   /**
+   * Calculate the balanced accuracy with respect to a particular class. This is defined
+   * as
+   * <p/>
+   * 
+   * <pre>
+   *  true positive rate + true negative rate
+   * -----------------------------------------
+   *                     2  
+   * </pre>
+   * 
+   * @param classIndex the index of the class to consider as "positive"
+   * @return the balanced accuracy
+   */
+  public double balancedAccuracy(int classIndex) {
+    return m_delegate.balancedAccuracy(classIndex);
+  }
+
+  /**
+   * Calculate the adjusted balanced accuracy as the macro-average of
+   * recall scores per class (true positive rates), rescaled to the
+   * range 1 / (1 - number_of_classes) to 1.
+   * 
+   * @return the adjusted balanced accuracy
+   */
+  public double adjustedBalancedAccuracy() {
+    return m_delegate.adjustedBalancedAccuracy();
+  }
+
+  /**
    * Sets the class prior probabilities.
    * 
    * @param train the training instances used to determine the prior

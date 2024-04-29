@@ -155,11 +155,13 @@ public class ClassifierSplitEvaluator implements SplitEvaluator, OptionHandler,
   /** The length of a result */
   private static final int RESULT_SIZE = 32;
 
-  /** The number of IR statistics */
-  private static final int NUM_IR_STATISTICS = 16;
+  /** The number of IR statistics
+   * plus Balanced Accuracy */
+  private static final int NUM_IR_STATISTICS = 17;
 
-  /** The number of averaged IR statistics */
-  private static final int NUM_WEIGHTED_IR_STATISTICS = 10;
+  /** The number of averaged IR statistics
+   * plus Adjusted Balanced Accuracy */
+  private static final int NUM_WEIGHTED_IR_STATISTICS = 11;
 
   /** The number of unweighted averaged IR statistics */
   private static final int NUM_UNWEIGHTED_IR_STATISTICS = 2;
@@ -586,6 +588,8 @@ public class ClassifierSplitEvaluator implements SplitEvaluator, OptionHandler,
     resultTypes[current++] = doub;
     resultTypes[current++] = doub;
     resultTypes[current++] = doub;
+    // Balanced Accuracy
+    resultTypes[current++] = doub;
 
     // Unweighted IR stats
     resultTypes[current++] = doub;
@@ -601,6 +605,8 @@ public class ClassifierSplitEvaluator implements SplitEvaluator, OptionHandler,
     resultTypes[current++] = doub;
     resultTypes[current++] = doub;
     resultTypes[current++] = doub;
+    resultTypes[current++] = doub;
+    // Adjusted Balanced Accuracy
     resultTypes[current++] = doub;
 
     // Timing stats
@@ -718,6 +724,8 @@ public class ClassifierSplitEvaluator implements SplitEvaluator, OptionHandler,
     resultNames[current++] = "Matthews_correlation";
     resultNames[current++] = "Area_under_ROC";
     resultNames[current++] = "Area_under_PRC";
+    // Balanced Accuracy
+    resultNames[current++] = "Balanced_Accuracy";
 
     // Weighted IR stats
     resultNames[current++] = "Weighted_avg_true_positive_rate";
@@ -730,6 +738,8 @@ public class ClassifierSplitEvaluator implements SplitEvaluator, OptionHandler,
     resultNames[current++] = "Weighted_avg_matthews_correlation";
     resultNames[current++] = "Weighted_avg_area_under_ROC";
     resultNames[current++] = "Weighted_avg_area_under_PRC";
+    // Adjusted Balanced Accuracy
+    resultNames[current++] = "Adjusted_Balanced_Accuracy";
 
     // Unweighted IR stats
     resultNames[current++] = "Unweighted_macro_avg_F_measure";
@@ -898,6 +908,8 @@ public class ClassifierSplitEvaluator implements SplitEvaluator, OptionHandler,
       eval.matthewsCorrelationCoefficient(m_IRclass));
     result[current++] = new Double(eval.areaUnderROC(m_IRclass));
     result[current++] = new Double(eval.areaUnderPRC(m_IRclass));
+    // Balanced Accuracy
+    result[current++] = new Double(eval.balancedAccuracy(m_IRclass));
 
     // Weighted IR stats
     result[current++] = new Double(eval.weightedTruePositiveRate());
@@ -910,6 +922,8 @@ public class ClassifierSplitEvaluator implements SplitEvaluator, OptionHandler,
     result[current++] = new Double(eval.weightedMatthewsCorrelation());
     result[current++] = new Double(eval.weightedAreaUnderROC());
     result[current++] = new Double(eval.weightedAreaUnderPRC());
+    // Adjusted Balanced Accuracy
+    result[current++] = new Double(eval.adjustedBalancedAccuracy());
 
     // Unweighted IR stats
     result[current++] = new Double(eval.unweightedMacroFmeasure());

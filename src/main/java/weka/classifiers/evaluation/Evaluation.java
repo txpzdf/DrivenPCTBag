@@ -4317,6 +4317,54 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
   }
 
   /**
+   * Calculate the balanced accuracy with respect to a particular class. This is defined
+   * as
+   * <p/>
+   * 
+   * <pre>
+   *  true positive rate + true negative rate
+   * -----------------------------------------
+   *                     2  
+   * </pre>
+   * 
+   * @param classIndex the index of the class to consider as "positive"
+   * @return the balanced accuracy
+   */
+  public double balancedAccuracy(int classIndex) {
+    return (double)0.5 * ( truePositiveRate(classIndex) + trueNegativeRate(classIndex) );
+  }
+
+  /**
+   * Calculate the adjusted balanced accuracy as the macro-average of
+   * recall scores per class (true positive rates), rescaled to the
+   * range 1 / (1 - number_of_classes) to 1.
+   * (based on balanced_accuracy_score of scikit-learn
+   * (https://scikit-learn.org/stable/modules/model_evaluation.html#balanced-accuracy-score))
+   * 
+   * @return the adjusted balanced accuracy
+   */
+  public double adjustedBalancedAccuracy() {
+
+	  double[] classCounts = trueClassCounts();
+	  double truePosTotal = 0;
+	  int trueNumClasses = 0;
+	  for (int i = 0; i < m_NumClasses; i++) {
+		  if (classCounts[i] > 0) {
+			  trueNumClasses++;
+			  truePosTotal += truePositiveRate(i);
+		  }
+	  }
+	  // Average of true positive rates
+	  truePosTotal /= trueNumClasses;
+	  // Adjusted for chance, so that random performance would score 0,
+	  // while keeping perfect performance at a score of 1.
+	  double chance = (double)1 / trueNumClasses;
+	  truePosTotal -= chance;
+	  truePosTotal /= 1 - chance;
+	  return truePosTotal;
+  }
+
+  /**
    * Sets the class prior probabilities.
    *
    * @param train the training instances used to determine the prior
