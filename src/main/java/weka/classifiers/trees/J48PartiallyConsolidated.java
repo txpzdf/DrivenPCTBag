@@ -228,9 +228,9 @@ public class J48PartiallyConsolidated
 	/** Visualize the base trees: None, only the first ten (if they exist) or all */
 	protected int m_PCTBvisualizeBaseTrees = Visualize_FirstOnes;
 
-	/** Whether to show the explanation measures of the all decision trees
+	/** Whether to show the explanation aggregated measures of the all decision trees
 	 *  that compose the final classifier (MCS). */
-	protected boolean m_PCTBprintExplanationMeasuresMCS = false;
+	protected boolean m_PCTBprintExplanationMeasuresBaseTrees = false;
 
 	/** Array for storing the generated base classifiers.
 	 * (based on Bagging.java written by Eibe Frank eta al)
@@ -593,7 +593,7 @@ public class J48PartiallyConsolidated
 		else
 			setPCTBvisualizeBaseTrees(new SelectedTag(Visualize_FirstOnes, TAGS_VISUALIZE_BASE_TREES)); // default: only the first ten
 		
-	    setPCTBprintExplanationMeasuresMCS(Utils.getFlag("PCTB-P", options));
+	    setPCTBprintExplanationMeasuresBaseTrees(Utils.getFlag("PCTB-P", options));
 
 		// J48 and J48Consolidated options
 		// ===============================
@@ -623,7 +623,7 @@ public class J48PartiallyConsolidated
 		result.add("-PCTB-V");
 		result.add("" + m_PCTBvisualizeBaseTrees);
 
-		if (m_PCTBprintExplanationMeasuresMCS)
+		if (m_PCTBprintExplanationMeasuresBaseTrees)
 			result.add("-PCTB-P");
 
 		return (String[]) result.toArray(new String[result.size()]);	  
@@ -689,8 +689,8 @@ public class J48PartiallyConsolidated
 	 */
 	public String toStringPrintExplanationMeasuresMCS(String line) {
 		String st = "";
-		if (m_PCTBprintExplanationMeasuresMCS) {
-			st += "\n--- Complexity/Explanation measures  ---"
+		if (m_PCTBprintExplanationMeasuresBaseTrees) {
+			st += "\n--- Complexity/Explanation aggregated measures  ---"
 				+ "\n--- of the whole multiple classifier ---\n";
 			st += line;
 			
@@ -934,28 +934,28 @@ public class J48PartiallyConsolidated
 	 * @return tip text for this property suitable for
 	 * displaying in the explorer/experimenter gui
 	 */
-	public String PCTBprintExplanationMeasuresMCSTipText() {
-		return "Whether to show the explanation measures of all DTs.";
+	public String PCTBprintExplanationMeasuresBaseTreesTipText() {
+		return "Whether to show the explanation aggregated measures of all base trees.";
 	}
 	
 	/**
-	 * Set whether to show the explanation measures of all DTs. 
+	 * Set whether to show the explanation aggregated measures of all base trees. 
 	 *
 	 * @param printExplanationMeasures whether to show the explanation measures of all DTs.
 	 */
-	public void setPCTBprintExplanationMeasuresMCS(boolean printExplanationMeasures) {
+	public void setPCTBprintExplanationMeasuresBaseTrees(boolean printExplanationMeasures) {
 
-		m_PCTBprintExplanationMeasuresMCS = printExplanationMeasures;
+		m_PCTBprintExplanationMeasuresBaseTrees = printExplanationMeasures;
 	}
 
 	/**
-	 * Get whether to show the explanation measures of all DTs.
+	 * Get whether to show the explanation aggregated measures of all base trees.
 	 *
 	 * @return whether to to show the explanation measures
 	 */
-	public boolean getPCTBprintExplanationMeasuresMCS() {
+	public boolean getPCTBprintExplanationMeasuresBaseTrees() {
 
-		return m_PCTBprintExplanationMeasuresMCS;
+		return m_PCTBprintExplanationMeasuresBaseTrees;
 	}
 
 }
