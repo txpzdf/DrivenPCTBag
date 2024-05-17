@@ -598,14 +598,18 @@ public class J48ItPartiallyConsolidated
 		if (m_ITPCTconsolidationPercentHowToSet == ConsolidationNumber_Percentage) {
 			if (m_ITPCTpriorityCriteria == Levelbylevel) {
 				st += "Consolidation percent (in terms of number of levels of the tree) = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%";
-				int numberNodesConso = ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getNumInternalNodesConso();
-				if (numberNodesConso >= 0)
-					st += " => Number of levels to grow: " + numberNodesConso;
+				if (m_root != null) {
+					int numberNodesConso = ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getNumInternalNodesConso();
+					if (numberNodesConso >= 0)
+						st += " => Number of levels to grow: " + numberNodesConso;
+				}
 			} else {
 				st += "Consolidation percent = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%";
-				int numberNodesConso = ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getNumInternalNodesConso();
-				if (numberNodesConso >= 0)
-					st += " => Internal nodes to grow: " + numberNodesConso;
+				if (m_root != null) {
+					int numberNodesConso = ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getNumInternalNodesConso();
+					if (numberNodesConso >= 0)
+						st += " => Internal nodes to grow: " + numberNodesConso;
+				}
 			}
 			st += "\n";
 		} else { // ConsolidationNumber_Value
@@ -630,6 +634,73 @@ public class J48ItPartiallyConsolidated
 		return st;
 	}
 
+	/**
+	 * Returns the time taken to build the whole Consolidated Tree (CT),
+	 * including pruning/collapsing, if required.
+	 * 
+	 * @return elapsed time
+	 */
+	public double measureElapsedTimeTrainingWholeCT() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingWholeCT();
+	}
+	
+	/**
+	 * Returns the time taken to build the partial Consolidated Tree (CT),
+	 * including pruning/collapsing, if required.
+	 * 
+	 * @return elapsed time
+	 */
+	public double measureElapsedTimeTrainingPartialCT() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingPartialCT();
+	}
+
+	/**
+	 * Returns the time taken to build all base trees that compose the final multiple classifier (Bagging),
+	 * including pruning/collapsing, if required.
+	 * 
+	 * @return elapsed time
+	 */
+	public double measureElapsedTimeTrainingAssocBagging() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingAssocBagging();
+	}
+
+	/**
+	 * Returns an enumeration of the additional measure names
+	 * (Added also those produced by the base algorithm).
+	 * 
+	 * @return an enumeration of the measure names
+	 */
+	@Override
+	public Enumeration<String> enumerateMeasures() {
+		Vector<String> newVector = new Vector<String>(1);
+		newVector.addAll(Collections.list(super.enumerateMeasures()));
+		newVector.addElement("measureElapsedTimeTrainingWholeCT");
+		newVector.addElement("measureElapsedTimeTrainingPartialCT");
+		newVector.addElement("measureElapsedTimeTrainingAssocBagging");
+		return newVector.elements();
+	}
+
+	/**
+	 * Returns the value of the named measure.
+	 *
+	 * @param additionalMeasureName the name of the measure to query for its value
+	 * @return the value of the named measure
+	 * @throws IllegalArgumentException if the named measure is not supported
+	 */
+	@Override
+	public double getMeasure(String additionalMeasureName) {
+		if(Collections.list(new J48PartiallyConsolidated().enumerateMeasures()).contains(additionalMeasureName)) {
+			return super.getMeasure(additionalMeasureName);
+		} else  if (additionalMeasureName.compareToIgnoreCase("measureElapsedTimeTrainingWholeCT") == 0) {
+			return measureElapsedTimeTrainingWholeCT();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureElapsedTimeTrainingPartialCT") == 0) {
+			return measureElapsedTimeTrainingPartialCT();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureElapsedTimeTrainingAssocBagging") == 0) {
+			return measureElapsedTimeTrainingAssocBagging();
+		} else
+			throw new IllegalArgumentException(additionalMeasureName 
+					+ " not supported (J48ItPartiallyConsolidated)");
+	}
 	/**
 	 * Returns the tip text for this property
 	 * 

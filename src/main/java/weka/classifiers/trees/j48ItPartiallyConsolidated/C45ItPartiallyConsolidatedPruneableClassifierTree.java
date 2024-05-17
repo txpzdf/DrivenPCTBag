@@ -55,6 +55,15 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	/** True if the partial Consolidated tree(CT) is to be collapsed. */
 	protected boolean m_collapseTheCTree = false;
 
+	/** Time taken to build the whole Consolidated Tree (CT), including pruning/collapsing, if required. */
+	protected double m_elapsedTimeTrainingWholeCT = (double)Double.NaN;
+
+	/** Time taken to build the partial Consolidated Tree (CT), including pruning/collapsing, if required. */
+	protected double m_elapsedTimeTrainingPartialCT = (double)Double.NaN;
+
+	/** Time taken to build all base trees that compose the final multiple classifier (Bagging), including pruning/collapsing, if required. */
+	protected double m_elapsedTimeTrainingAssocBagging = (double)Double.NaN;
+
 	/**
 	 * Constructor for pruneable consolidated tree structure. Calls the superclass
 	 * constructor.
@@ -99,6 +108,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	 */
 	public void buildClassifier(Instances data, Instances[] samplesVector, float consolidationPercent,
 			int consolidationNumberHowToSet) throws Exception {
+		long trainTimeStart = 0, trainTimeElapsed = 0;
 		if (m_priorityCriteria == J48It.Original) {
 
 			m_pruneTheTree = m_pruneTheConsolidatedTree;
@@ -108,7 +118,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 		} else {
 			if (consolidationNumberHowToSet == J48ItPartiallyConsolidated.ConsolidationNumber_Percentage) {
 								
-			
+				trainTimeStart = System.currentTimeMillis();
 				super.buildTree(data, samplesVector, m_subtreeRaising || !m_cleanup); // build the tree without restrictions
 								
 				if (m_collapseTheCTree) {
@@ -117,6 +127,9 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 				if (m_pruneTheConsolidatedTree) {
 					prune();
 				}
+				trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
+				System.out.println("Time taken to build the whole consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
+				m_elapsedTimeTrainingWholeCT = trainTimeElapsed / (double)1000.0;
 
 				if (m_priorityCriteria == J48It.Levelbylevel) {
 
@@ -154,6 +167,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			}
 
 			// buildTree
+			trainTimeStart = System.currentTimeMillis();
 			buildTree(data, samplesVector, m_subtreeRaising || !m_cleanup);
 			if (m_collapseTheCTree) {
 				collapse();
@@ -161,7 +175,15 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			if (m_pruneTheConsolidatedTree) {
 				prune();
 			}
+			trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
+			System.out.println("Time taken to build the partial consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
+			m_elapsedTimeTrainingPartialCT = trainTimeElapsed / (double)1000.0;
+
+			trainTimeStart = System.currentTimeMillis();
 			applyBagging();
+			trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
+			System.out.println("Time taken to build the associated Bagging: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
+			m_elapsedTimeTrainingAssocBagging = trainTimeElapsed / (double)1000.0;
 
 			if (m_cleanup)
 				cleanup(new Instances(data, 0));
@@ -444,5 +466,26 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 				m_sons[i].dumpTree(depth + 1, text);
 			}
 		}
+	}
+
+	/**
+	 * @return the m_elapsedTimeTrainingWholeCT
+	 */
+	public double getElapsedTimeTrainingWholeCT() {
+		return m_elapsedTimeTrainingWholeCT;
+	}
+
+	/**
+	 * @return the m_elapsedTimeTrainingPartialCT
+	 */
+	public double getElapsedTimeTrainingPartialCT() {
+		return m_elapsedTimeTrainingPartialCT;
+	}
+
+	/**
+	 * @return the m_elapsedTimeTrainingAssocBagging
+	 */
+	public double getElapsedTimeTrainingAssocBagging() {
+		return m_elapsedTimeTrainingAssocBagging;
 	}
 }
