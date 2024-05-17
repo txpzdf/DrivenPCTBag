@@ -25,6 +25,10 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 	/** for serialization */
 	private static final long serialVersionUID = -4396836285687129766L;
 
+	/** Whether to prune the tree without preserving the structure of the partially
+	 * consolidated tree. */
+	protected boolean m_pruneWithoutPreservingConsolidatedStructure = false;
+
 	/** The model selection method to force the consolidated decision in a base tree */
 	protected C45ModelSelectionExtended m_baseModelToForceDecision;
 
@@ -37,6 +41,7 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 	 * @param raiseTree true if subtree raising has to be performed
 	 * @param cleanup true if cleanup has to be done
 	 * @param collapseTree true if collapse has to be done
+	 * @param notPreservingStructure true if pruning the tree without preserving the consolidated structure
 	 * @throws Exception if something goes wrong
 	 */
 	public C45PruneableClassifierTreeExtended(ModelSelection toSelectLocModel,
@@ -44,9 +49,11 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 		    boolean pruneTree,float cf,
 		    boolean raiseTree,
 		    boolean cleanup,
-            boolean collapseTree) throws Exception {
+            boolean collapseTree,
+            boolean notPreservingStructure) throws Exception {
 		super(toSelectLocModel, pruneTree, cf, raiseTree, cleanup, collapseTree);
 		m_baseModelToForceDecision = baseModelToForceDecision;
+		m_pruneWithoutPreservingConsolidatedStructure = notPreservingStructure;
 	}
 
 	/**
@@ -153,6 +160,27 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 	 *  maintaining the current tree structure
 	 * @throws Exception if something goes wrong
 	 */
+	public void rebuildTreeFromConsolidatedStructureAndPrune() throws Exception {
+		rebuildTreeFromConsolidatedStructure();
+		if (m_pruneWithoutPreservingConsolidatedStructure) {
+			/* Once the whole tree is grown, the pruning process will be applied to the tree. */
+			if (m_collapseTheTree) {
+				collapse();
+			}
+			if (m_pruneTheTree) {
+				prune();
+			}
+			if (m_cleanup) {
+				cleanup(new Instances(m_train, 0));
+			}
+		}
+	}
+	
+	/**
+	 * Rebuilds the tree according to J48 algorithm and
+	 *  maintaining the current tree structure
+	 * @throws Exception if something goes wrong
+	 */
 	public void rebuildTreeFromConsolidatedStructure() throws Exception {
 		if (!m_isLeaf){
 			for (int iSon=0;iSon<m_sons.length;iSon++)
@@ -163,12 +191,23 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 			// TODO Implement the option binarySplits of J48
 			// TODO Implement the option reducedErrorPruning of J48
 			C45PruneableClassifierTreeExtended newTree = new C45PruneableClassifierTreeExtended(m_toSelectModel, m_baseModelToForceDecision, m_pruneTheTree, m_CF,
-							    m_subtreeRaising, m_cleanup, m_collapseTheTree);
-			newTree.buildClassifier(m_train);
-			((C45ModelSelection)m_toSelectModel).cleanup();
+							    m_subtreeRaising, m_cleanup, m_collapseTheTree, m_pruneWithoutPreservingConsolidatedStructure);
+			if (m_pruneWithoutPreservingConsolidatedStructure) {
+				/* Build the tree without preserving the structure of the partially consolidated tree:
+				 * First grow the subtree with the data from the current node, replace the subtree
+				 * with the current node.
+				 * The pruning process shall be carried out, if necessary, on the entire grown tree. */
+				newTree.buildTree(m_train, m_subtreeRaising || !m_cleanup);
+			} else {
+				/* Build the tree but preserving the structure of the partially consolidated tree:
+				 * First grow the subtree with the data from the current node, prune it, if necessary,
+				 * and, finally, replace the subtree with the current node. */
+				newTree.buildClassifier(m_train);
+			}
 			/** Replace current node with the recent built tree */
 			replaceWithSubtree(newTree);
 			newTree = null;
+			((C45ModelSelection)m_toSelectModel).cleanup();
 		}
 	}
 

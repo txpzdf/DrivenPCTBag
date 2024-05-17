@@ -76,10 +76,11 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			ModelSelection toSelectLocModel, C45ModelSelectionExtended baseModelToForceDecision,
 			boolean pruneTree, float cf,
 			boolean raiseTree, boolean cleanup, 
-			boolean collapseTree, int numberSamples, 
+			boolean collapseTree, int numberSamples,
+			boolean notPreservingStructure,
 			int ITPCTpriorityCriteria, boolean pruneCT, boolean collapseCT) throws Exception {
 		super(toSelectLocModel, baseModelToForceDecision, pruneTree, cf, raiseTree, cleanup, collapseTree,
-				numberSamples);
+				numberSamples, notPreservingStructure);
 
 		// Initialize each criteria
 		m_priorityCriteria = ITPCTpriorityCriteria;
@@ -126,6 +127,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 					// given consolidationPercent
 					int numberLevelsConso = (int) (((treeLevels * consolidationPercent) / 100) + 0.5);
 					m_maximumCriteria = numberLevelsConso;
+					setNumInternalNodesConso(numberLevelsConso);
 					System.out.println(
 							"Number of levels to leave as consolidated: " + numberLevelsConso + " of " + treeLevels);
 
@@ -138,6 +140,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 					// given consolidationPercent
 					int numberNodesConso = (int) (((innerNodes * consolidationPercent) / 100) + 0.5);
 					m_maximumCriteria = numberNodesConso;
+					setNumInternalNodesConso(numberNodesConso);
 					System.out.println(
 							"Number of nodes to leave as consolidated: " + numberNodesConso + " of " + innerNodes);
 
@@ -294,6 +297,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 					C45ItPartiallyConsolidatedPruneableClassifierTree newTree = new C45ItPartiallyConsolidatedPruneableClassifierTree(
 							currentTree.m_toSelectModel, baseModelToForceDecision, m_pruneTheTree, m_CF,
 							m_subtreeRaising, m_cleanup, m_collapseTheTree, localSamplesVector.length,
+							m_pruneBaseTreesWithoutPreservingConsolidatedStructure,
 							m_priorityCriteria, m_pruneTheConsolidatedTree, m_collapseTheCTree);
 
 					/** Set the recent created base trees like the sons of the given parent node */

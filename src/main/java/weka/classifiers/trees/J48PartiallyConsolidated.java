@@ -188,6 +188,16 @@ import weka.core.TechnicalInformation.Type;
  *  None, only the first ten (if they exist) or all.  
  * (Default: only the first ten)<pre>
  * 
+ * <pre> -PCTB-P<br>
+ * Determines whether to show the explanation aggregated measures of the all decision trees
+ *  that compose the final classifier (MCS).  
+ * (Default: false)<pre>
+ * 
+ * <pre> -PCTB-WP<br>
+ * Determines whether to prune the base trees without preserving the structure of
+ * the partially consolidated tree. 
+ * (Default: false)<pre>
+ * 
 <!-- options-end -->
  *
  * @author Jesús M. Pérez (txus.perez@ehu.eus)
@@ -231,6 +241,10 @@ public class J48PartiallyConsolidated
 	/** Whether to show the explanation aggregated measures of the all decision trees
 	 *  that compose the final classifier (MCS). */
 	protected boolean m_PCTBprintExplanationMeasuresBaseTrees = false;
+
+	/** Whether to prune the base trees without preserving the structure of the partially
+	 * consolidated tree. */
+	protected boolean m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure = false;
 
 	/** Array for storing the generated base classifiers.
 	 * (based on Bagging.java written by Eibe Frank eta al)
@@ -316,7 +330,8 @@ public class J48PartiallyConsolidated
 		// TODO Implement the option reducedErrorPruning of J48
 		C45PartiallyConsolidatedPruneableClassifierTree localClassifier =
 				new C45PartiallyConsolidatedPruneableClassifierTree(modSelection, baseModelToForceDecision,
-						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length);
+						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length,
+						m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure);
 
 		localClassifier.buildClassifier(instances, samplesVector, m_PCTBconsolidationPercent);
 
@@ -475,6 +490,16 @@ public class J48PartiallyConsolidated
 	 *  None, only the first ten (if they exist) or all.  
 	 * (Default: only the first ten)<pre>
 	 * 
+	 * <pre> -PCTB-P<br>
+	 * Determines whether to show the explanation aggregated measures of the all decision trees
+	 *  that compose the final classifier (MCS).  
+	 * (Default: false)<pre>
+	 * 
+	 * <pre> -PCTB-WP<br>
+	 * Determines whether to prune the base trees without preserving the structure of
+	 * the partially consolidated tree. 
+	 * (Default: false)<pre>
+	 * 
 	 * @return an enumeration of all the available options.
 	 */
 	public Enumeration<Option> listOptions() {
@@ -506,10 +531,17 @@ public class J48PartiallyConsolidated
 
 	    newVector.
 	    addElement(new Option(
-	            "\tshow the explanation measures of the all decision trees" +
+	            "\tDetermines whether to show the explanation aggregated measures of the all base trees" +
 	            "\tthat compose the final classifier (MCS).\n" + 
 	            "\t(default false)",
 	            "PCTB-P", 0, "-PCTB-P"));
+
+	    newVector.
+	    addElement(new Option(
+	            "\tDetermines whether to prune the base trees without preserving the structure " +
+	            "\tthe partially consolidated tree.\n" + 
+	            "\t(default false)",
+	            "PCTB-WP", 0, "-PCTB-WP"));
 
 	    return newVector.elements();
 	}
@@ -569,8 +601,13 @@ public class J48PartiallyConsolidated
 	 * (Default: only the first ten)<pre>
 	 * 
 	 * <pre> -PCTB-P<br>
-	 * Determines Whether to show the explanation measures of the all decision trees
+	 * Determines whether to show the explanation aggregated measures of the all decision trees
 	 *  that compose the final classifier (MCS).  
+	 * (Default: false)<pre>
+	 * 
+	 * <pre> -PCTB-WP<br>
+	 * Determines whether to prune the base trees without preserving the structure of
+	 * the partially consolidated tree. 
 	 * (Default: false)<pre>
 	 * 
    <!-- options-end -->
@@ -578,6 +615,9 @@ public class J48PartiallyConsolidated
 	 * @param options the list of options as an array of strings
 	 * @throws Exception if an option is not supported
 	 */
+	/** Whether to prune the base trees without preserving the structure of the partially
+	 * consolidated tree. */
+
 	public void setOptions(String[] options) throws Exception {
 	    
 		// Options to leave partially consolidated the built consolidated tree (PCTB)
@@ -595,7 +635,9 @@ public class J48PartiallyConsolidated
 		
 	    setPCTBprintExplanationMeasuresBaseTrees(Utils.getFlag("PCTB-P", options));
 
-		// J48 and J48Consolidated options
+	    setPCTBpruneBaseTreesWithoutPreservingConsolidatedStructure(Utils.getFlag("PCTB-WP", options));
+
+	    // J48 and J48Consolidated options
 		// ===============================
 	    super.setOptions(options);
 	}
@@ -626,6 +668,9 @@ public class J48PartiallyConsolidated
 		if (m_PCTBprintExplanationMeasuresBaseTrees)
 			result.add("-PCTB-P");
 
+		if (m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure)
+			result.add("-PCTB-WP");
+
 		return (String[]) result.toArray(new String[result.size()]);	  
 	}
 
@@ -643,11 +688,19 @@ public class J48PartiallyConsolidated
 			ch_line[i] = '-';
 		String line = String.valueOf(ch_line);
 		line += "\n";
-		st += "Consolidation percent = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%\n";
+		st += "Consolidation percent = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%";
+		int numberNodesConso = ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getNumInternalNodesConso();
+		if (numberNodesConso >= 0)
+			st += " => Internal nodes: " + numberNodesConso;
+		st += "\n";
+		if (m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure)
+			st += "·Without preserving the structure of the partially consolidated tree in the base trees\n";
+		else
+			st += "·Preserving the structure of the partially consolidated tree in the base trees\n";
 		st += line;
 		st += super.toString();
 		st += toStringVisualizeBaseTrees(line);
-		st += toStringPrintExplanationMeasuresMCS(line);
+		st += toStringPrintExplanationMeasuresMCS();
 		return st;
 	}
 
@@ -687,12 +740,12 @@ public class J48PartiallyConsolidated
 	 * 
 	 * @return a description of the explanation measures of all DTs
 	 */
-	public String toStringPrintExplanationMeasuresMCS(String line) {
+	public String toStringPrintExplanationMeasuresMCS() {
 		String st = "";
 		if (m_PCTBprintExplanationMeasuresBaseTrees) {
 			st += "\n--- Complexity/Explanation aggregated measures  ---"
-				+ "\n--- of the whole multiple classifier ---\n";
-			st += line;
+				+ "\n---  of the whole multiple classifier           ---"
+				+ "\n---------------------------------------------------\n";
 			
 			String[] stMetaOperations = new String[]{"Avg", "Min", "Max", "Sum", "Mdn", "Dev"};
 			ArrayList<String> metaOperations = new ArrayList<>(Arrays.asList(stMetaOperations));
@@ -707,7 +760,6 @@ public class J48PartiallyConsolidated
 				}
 				st += "\n";
 			}
-			st += "\n";
 		}
 		return st;
 	}
@@ -956,6 +1008,37 @@ public class J48PartiallyConsolidated
 	public boolean getPCTBprintExplanationMeasuresBaseTrees() {
 
 		return m_PCTBprintExplanationMeasuresBaseTrees;
+	}
+
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String PCTBpruneBaseTreesWithoutPreservingConsolidatedStructureTipText() {
+		return "Whether to prune the base trees without preserving the structure of the partially consolidated tree.";
+	}
+
+	/**
+	 * Set whether to prune the base trees without preserving the structure of the partially
+	 * consolidated tree. 
+	 *
+	 * @param notPreserving whether to prune without preserving the consolidated structure.
+	 */
+	public void setPCTBpruneBaseTreesWithoutPreservingConsolidatedStructure(boolean notPreserving) {
+
+		m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure = notPreserving;
+	}
+
+	/**
+	 * Get whether to prune the base trees without preserving the structure of the partially
+	 * consolidated tree.
+	 *
+	 * @return whether to prune without preserving the consolidated structure
+	 */
+	public boolean getPCTBpruneBaseTreesWithoutPreservingConsolidatedStructure() {
+
+		return m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure;
 	}
 
 }

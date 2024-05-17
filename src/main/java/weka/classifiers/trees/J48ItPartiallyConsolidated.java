@@ -34,6 +34,7 @@ import weka.classifiers.trees.j48.ModelSelection;
 import weka.classifiers.trees.j48Consolidated.C45ConsolidatedModelSelection;
 import weka.classifiers.trees.j48ItPartiallyConsolidated.C45ItPartiallyConsolidatedPruneableClassifierTree;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45ModelSelectionExtended;
+import weka.classifiers.trees.j48PartiallyConsolidated.C45PartiallyConsolidatedPruneableClassifierTree;
 import weka.core.AdditionalMeasureProducer;
 import weka.core.Drawable;
 import weka.core.Instances;
@@ -326,6 +327,7 @@ public class J48ItPartiallyConsolidated
 		C45ItPartiallyConsolidatedPruneableClassifierTree localClassifier =
 				new C45ItPartiallyConsolidatedPruneableClassifierTree(modSelection, baseModelToForceDecision,
 						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length,
+						m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure,
 						m_ITPCTpriorityCriteria, !m_ITPCTunprunedCT, m_ITPCTcollapseCT);
 
 		localClassifier.buildClassifier(instances, samplesVector, m_PCTBconsolidationPercent, m_ITPCTconsolidationPercentHowToSet);
@@ -577,11 +579,6 @@ public class J48ItPartiallyConsolidated
 			ch_line[i] = '-';
 		String line = String.valueOf(ch_line);
 		line += "\n";
-		if (m_ITPCTconsolidationPercentHowToSet == ConsolidationNumber_Percentage) {
-			st += "Consolidation percent = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%\n";
-		} else { // ConsolidationNumber_Value
-			st += "Number of inner nodes of the partial consolidated tree to grow = " + Utils.doubleToString(m_PCTBconsolidationPercent,0) + "\n";
-		}
 		st += "Priority criteria to grow the partial consolidated tree: ";
 		switch(m_ITPCTpriorityCriteria) {
 			case Original:
@@ -598,6 +595,29 @@ public class J48ItPartiallyConsolidated
 				st += "Node by node - Gainratio weighted by Size";break;
 		}
 		st += "\n";
+		if (m_ITPCTconsolidationPercentHowToSet == ConsolidationNumber_Percentage) {
+			if (m_ITPCTpriorityCriteria == Levelbylevel) {
+				st += "Consolidation percent (in terms of number of levels of the tree) = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%";
+				int numberNodesConso = ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getNumInternalNodesConso();
+				if (numberNodesConso >= 0)
+					st += " => Number of levels to grow: " + numberNodesConso;
+			} else {
+				st += "Consolidation percent = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%";
+				int numberNodesConso = ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getNumInternalNodesConso();
+				if (numberNodesConso >= 0)
+					st += " => Internal nodes to grow: " + numberNodesConso;
+			}
+			st += "\n";
+		} else { // ConsolidationNumber_Value
+			if (m_ITPCTpriorityCriteria == Levelbylevel)
+				st += "Number of levels of the partial consolidated tree to grow = " + Utils.doubleToString(m_PCTBconsolidationPercent,0) + "\n";
+			else
+				st += "Number of inner nodes of the partial consolidated tree to grow = " + Utils.doubleToString(m_PCTBconsolidationPercent,0) + "\n";
+		}
+		if (m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure)
+			st += "·Without preserving the structure of the partially consolidated tree in the base trees\n";
+		else
+			st += "·Preserving the structure of the partially consolidated tree in the base trees\n";
 		st += line;
 		//st += super.toString();
 		if (m_root == null)
@@ -606,7 +626,7 @@ public class J48ItPartiallyConsolidated
 			st += "J48Consolidated " + (m_ITPCTunprunedCT? "unpruned " : "") + (m_ITPCTcollapseCT? "(collapsed) " : "") + "tree\n" + 
 				toStringResamplingMethod() + m_root.toString();
 		st += toStringVisualizeBaseTrees(line);
-		st += toStringPrintExplanationMeasuresMCS(line);
+		st += toStringPrintExplanationMeasuresMCS();
 		return st;
 	}
 
