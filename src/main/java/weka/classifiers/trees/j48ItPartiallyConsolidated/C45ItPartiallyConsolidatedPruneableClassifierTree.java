@@ -164,6 +164,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			{
 				m_maximumCriteria = (int) consolidationPercent;
 				System.out.println("Number of nodes or levels to leave as consolidated: " + m_maximumCriteria);
+				m_elapsedTimeTrainingWholeCT = (double)0.0;
 			}
 
 			// buildTree
