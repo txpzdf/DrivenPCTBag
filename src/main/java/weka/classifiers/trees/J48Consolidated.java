@@ -219,6 +219,9 @@ TechnicalInformationHandler {
 	/** The true value estimated for the coverage achieved with the set of samples generated
 	 *  for the construction of the consolidated tree */
 	private double m_trueCoverage;
+	
+	/** Time taken to generate the sample vector. */
+	protected double m_elapsedTimeResampling = (double)Double.NaN;
 
 	/** Size of each sample(bag), as a percentage of the training set size, to be used in exceptional situations
 	 *  where the original class distribution and the distribution of the samples to be generated are the same
@@ -380,6 +383,7 @@ TechnicalInformationHandler {
 	 * @throws Exception if something goes wrong
 	 */
 	protected Instances[] generateSamples(Instances instances) throws Exception {
+		long timeStart = 0, timeElapsed = 0;
 		Instances[] samplesVector = null;
 		// can classifier tree handle the data?
 		getCapabilities().testWithFail(instances);
@@ -391,6 +395,8 @@ TechnicalInformationHandler {
 			System.out.println("=== Generation of the set of samples ===");
 			System.out.println(toStringResamplingMethod());
 		}
+		timeStart = System.currentTimeMillis();
+
 		/** Original sample size */
 		int dataSize = instancesWMC.numInstances();
 		if(dataSize==0)
@@ -432,8 +438,12 @@ TechnicalInformationHandler {
 		else
 			// RMnewDistrMinClass is between 0 and 100: Changes the class distribution to the indicated value
 			samplesVector = generateSamplesChangingMinClassDistr(instancesWMC, dataSize, bagSize, random);
-		if (m_Debug)
+		timeElapsed = System.currentTimeMillis() - timeStart;
+		m_elapsedTimeResampling = timeElapsed / (double)1000.0;
+		if (m_Debug) {
+			System.out.println("Time taken to generate the sample vector: " + Utils.doubleToString(timeElapsed / 1000.0, 2) + " seconds\n");
 			System.out.println("=== End of Generation of the set of samples ===");
+		}
 		return samplesVector;
 	}
 
@@ -1654,6 +1664,15 @@ TechnicalInformationHandler {
 	}
 
 	/**
+	 * Returns the time taken to generate the sample vector for the consolidated tree.
+	 * 
+	 * @return elapsed time
+	 */
+	public double measureElapsedTimeResampling() {
+		return m_elapsedTimeResampling;
+	}
+
+	/**
 	 * Returns an enumeration of the additional measure names
 	 * produced by the J48 algorithm, plus the true coverage achieved
 	 * by the set of samples generated
@@ -1667,6 +1686,7 @@ TechnicalInformationHandler {
 		//if (m_RMnumberSamplesHowToSet == NumberSamples_BasedOnCoverage)
 		measures.add("measureNumberSamplesByCoverage");
 		measures.add("measureTrueCoverage");
+		measures.add("measureElapsedTimeResampling");
 		return measures.elements();
 	}
 
@@ -1683,6 +1703,8 @@ TechnicalInformationHandler {
 			return measureTrueCoverage();
 		} else if (additionalMeasureName.compareToIgnoreCase("measureNumberSamplesByCoverage") == 0) {
 			return measureNumberSamplesByCoverage();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureElapsedTimeResampling") == 0) {
+			return measureElapsedTimeResampling();
 		} else
 			throw new IllegalArgumentException(additionalMeasureName 
 					+ " not supported (J48Consolidated)");
