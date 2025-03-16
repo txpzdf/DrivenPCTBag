@@ -64,6 +64,22 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	/** Time taken to build all base trees that compose the final multiple classifier (Bagging), including pruning/collapsing, if required. */
 	protected double m_elapsedTimeTrainingAssocBagging = (double)Double.NaN;
 
+	/** Whether to prune the base trees without preserving the structure of the partially
+	 * consolidated tree. */
+	protected boolean m_pruneBaseTreesWithoutPreservingConsolidatedStructure;
+
+	/**  Number of base trees preserving the split decision of the current consolidated node. */
+	protected int m_numberBaseTreesWithThisSplitDecision = 0;
+	
+	/** Average percentage of base trees preserving structure throughout the tree. */
+	protected double m_avgPercBaseTreesPreservingStructure;
+	
+	/** Minimum percentage of base trees preserving structure throughout the tree. */
+	protected double m_minPercBaseTreesPreservingStructure;
+	
+	/** Maximum percentage of base trees preserving structure throughout the tree. */
+	protected double m_maxPercBaseTreesPreservingStructure;
+	
 	/**
 	 * Constructor for pruneable consolidated tree structure. Calls the superclass
 	 * constructor.
@@ -91,10 +107,11 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 		super(toSelectLocModel, baseModelToForceDecision, pruneTree, cf, raiseTree, cleanup, collapseTree,
 				numberSamples, notPreservingStructure);
 
-		// Initialize each criteria
 		m_priorityCriteria = ITPCTpriorityCriteria;
 		m_pruneTheConsolidatedTree = pruneCT;
 		m_collapseTheCTree = collapseCT;
+		m_pruneBaseTreesWithoutPreservingConsolidatedStructure=notPreservingStructure;
+		m_numberBaseTreesWithThisSplitDecision=0;
 	}
 
 	/**
@@ -189,6 +206,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			if (m_cleanup)
 				cleanup(new Instances(data, 0));
 		}
+		computeNumberBaseTreesPreservingPartialCTStructure();
 	}
 
 	/**
@@ -449,6 +467,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	public void dumpTree(int depth, StringBuffer text) throws Exception {
 
 		int i, j;
+		int numberSamples = m_sampleTreeVector.length;
 
 		for (i = 0; i < m_sons.length; i++) {
 			text.append("\n");
@@ -456,7 +475,9 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			for (j = 0; j < depth; j++) {
 				text.append("|   ");
 			}
-			text.append("[" + m_order + "] ");
+			text.append("[" + m_order + "]");
+			if(m_pruneBaseTreesWithoutPreservingConsolidatedStructure)
+				text.append("[Str: " + Utils.doubleToString(m_numberBaseTreesWithThisSplitDecision*(double)100/numberSamples,2) + "%]");
 			text.append(m_localModel.leftSide(m_train));
 			text.append(m_localModel.rightSide(i, m_train));
 			if (m_sons[i].isLeaf()) {
@@ -488,5 +509,73 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	 */
 	public double getElapsedTimeTrainingAssocBagging() {
 		return m_elapsedTimeTrainingAssocBagging;
+	}
+	
+	/**
+	 * @return the m_avgPercBaseTreesPreservingStructure
+	 */
+	public double getAvgPercBaseTreesPreservingStructure() {
+		return m_avgPercBaseTreesPreservingStructure;
+	}
+
+	/**
+	 * @return the m_minPercBaseTreesPreservingStructure
+	 */
+	public double getMinPercBaseTreesPreservingStructure() {
+		return m_minPercBaseTreesPreservingStructure;
+	}
+
+	/**
+	 * @return the m_maxPercBaseTreesPreservingStructure
+	 */
+	public double getMaxPercBaseTreesPreservingStructure() {
+		return m_maxPercBaseTreesPreservingStructure;
+	}
+
+	/**
+	 * Computes the number of base trees that preserve the same structure as
+	 * the partial consolidated tree.
+	 */
+	public void computeNumberBaseTreesPreservingPartialCTStructure() {
+		/** Number of Samples. */
+		int numberSamples = m_sampleTreeVector.length;
+		m_numberBaseTreesWithThisSplitDecision = 0;
+		for (int iSample = 0; iSample < numberSamples; iSample++)
+			computeWhetherBaseTreePreservesStructure((C45PruneableClassifierTreeExtended)(m_sampleTreeVector[iSample]));
+		ArrayList<Double> vPercBaseTrees = new ArrayList<>();
+		getAllPercBaseTreesPreservingStructure(vPercBaseTrees);
+		m_avgPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN);
+		m_minPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).min().orElse(Double.NaN);
+        m_maxPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
+	}
+	
+	public void computeWhetherBaseTreePreservesStructure(ClassifierTree baseTree) {
+		if (m_isLeaf)
+			return;
+		if (baseTree.isLeaf())
+			return;
+		int attPCT=((C45Split)m_localModel).attIndex();
+		double pointPCT=((C45Split)m_localModel).splitPoint();
+		if((attPCT==((C45Split)baseTree.getLocalModel()).attIndex())&&
+			(Utils.eq(pointPCT,((C45Split)baseTree.getLocalModel()).splitPoint()))) {
+			m_numberBaseTreesWithThisSplitDecision+=1;
+			ClassifierTree[] vsons=baseTree.getSons();
+			for (int i=0;i<m_sons.length;i++)
+				((C45ItPartiallyConsolidatedPruneableClassifierTree)son(i)).computeWhetherBaseTreePreservesStructure(vsons[i]);
+		} else {
+			// If the node has children and the split does not match, subtree raising has occurred in the pruning.
+			int indexOfLargestBranch = localModel().distribution().maxBag();
+			((C45ItPartiallyConsolidatedPruneableClassifierTree)son(indexOfLargestBranch)).computeWhetherBaseTreePreservesStructure(baseTree);
+		}
+	}
+	
+	public void getAllPercBaseTreesPreservingStructure(ArrayList<Double> list) {
+		/** Number of Samples. */
+		int numberSamples = m_sampleTreeVector.length;
+		if(!m_isLeaf) {
+			list.add(m_numberBaseTreesWithThisSplitDecision*(double)100/numberSamples);
+			for (int i=0;i<m_sons.length;i++)
+				((C45ItPartiallyConsolidatedPruneableClassifierTree)son(i)).getAllPercBaseTreesPreservingStructure(list);
+		}
 	}
 }

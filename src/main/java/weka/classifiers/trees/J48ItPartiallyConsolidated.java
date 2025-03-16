@@ -631,6 +631,17 @@ public class J48ItPartiallyConsolidated
 				toStringResamplingMethod() + m_root.toString();
 		st += toStringVisualizeBaseTrees(line);
 		st += toStringPrintExplanationMeasuresMCS();
+		if(m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure) {
+			st += "\n---------------------------------------------------"
+				+ "\nMeasures to evaluate the effect of pruning base trees"
+				+ "\nwithout preserving the structure of the partial consolidated tree:"
+				+ "\nGiven, at each node of the partial consolidated tree, the percentage"
+				+ "\nof base trees containing the same split division [Str: dd.dd%], we obtain:"
+				+ "\n· Mean: " + Utils.roundDouble(measureAvgPercBaseTreesPreservingStructure(),2) + "%"
+				+ "\n· Minimum: " + Utils.roundDouble(measureMinPercBaseTreesPreservingStructure(),2) + "%"
+				+ "\n· Maximum: " + Utils.roundDouble(measureMaxPercBaseTreesPreservingStructure(),2) + "%"
+				+ "\n---------------------------------------------------";
+		}
 		return st;
 	}
 
@@ -665,6 +676,33 @@ public class J48ItPartiallyConsolidated
 	}
 
 	/**
+	 * Returns the average percentage of base trees preserving structure throughout the tree
+	 * 
+	 * @return average percentage
+	 */
+	public double measureAvgPercBaseTreesPreservingStructure() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getAvgPercBaseTreesPreservingStructure();
+	}
+
+	/**
+	 * Returns the minimum percentage of base trees preserving structure throughout the tree
+	 * 
+	 * @return minimum percentage
+	 */
+	public double measureMinPercBaseTreesPreservingStructure() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getMinPercBaseTreesPreservingStructure();
+	}
+
+	/**
+	 * Returns the maximum percentage of base trees preserving structure throughout the tree
+	 * 
+	 * @return maximum percentage
+	 */
+	public double measureMaxPercBaseTreesPreservingStructure() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getMaxPercBaseTreesPreservingStructure();
+	}
+
+	/**
 	 * Returns an enumeration of the additional measure names
 	 * (Added also those produced by the base algorithm).
 	 * 
@@ -677,6 +715,9 @@ public class J48ItPartiallyConsolidated
 		newVector.addElement("measureElapsedTimeTrainingWholeCT");
 		newVector.addElement("measureElapsedTimeTrainingPartialCT");
 		newVector.addElement("measureElapsedTimeTrainingAssocBagging");
+		newVector.addElement("measureAvgPercBaseTreesPreservingStructure");
+		newVector.addElement("measureMinPercBaseTreesPreservingStructure");
+		newVector.addElement("measureMaxPercBaseTreesPreservingStructure");
 		return newVector.elements();
 	}
 
@@ -697,10 +738,17 @@ public class J48ItPartiallyConsolidated
 			return measureElapsedTimeTrainingPartialCT();
 		} else if (additionalMeasureName.compareToIgnoreCase("measureElapsedTimeTrainingAssocBagging") == 0) {
 			return measureElapsedTimeTrainingAssocBagging();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureAvgPercBaseTreesPreservingStructure") == 0) {
+			return measureAvgPercBaseTreesPreservingStructure();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureMinPercBaseTreesPreservingStructure") == 0) {
+			return measureMinPercBaseTreesPreservingStructure();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureMaxPercBaseTreesPreservingStructure") == 0) {
+			return measureMaxPercBaseTreesPreservingStructure();
 		} else
 			throw new IllegalArgumentException(additionalMeasureName 
 					+ " not supported (J48ItPartiallyConsolidated)");
 	}
+
 	/**
 	 * Returns the tip text for this property
 	 * 
