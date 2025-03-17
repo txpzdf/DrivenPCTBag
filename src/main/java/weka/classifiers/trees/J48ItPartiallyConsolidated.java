@@ -640,6 +640,8 @@ public class J48ItPartiallyConsolidated
 					+ "\n· Mean: " + Utils.roundDouble(measureAvgPercBaseTreesPreservingStructure(),2) + "%"
 					+ "\n· Minimum: " + Utils.roundDouble(measureMinPercBaseTreesPreservingStructure(),2) + "%"
 					+ "\n· Maximum: " + Utils.roundDouble(measureMaxPercBaseTreesPreservingStructure(),2) + "%"
+					+ "\n· Median: " + Utils.roundDouble(measureMdnPercBaseTreesPreservingStructure(),2) + "%"
+					+ "\n· Std.Dev.: " + Utils.roundDouble(measureDevPercBaseTreesPreservingStructure(),2) + "%"
 					+ "\n---------------------------------------------------";
 			}
 		}
@@ -704,6 +706,24 @@ public class J48ItPartiallyConsolidated
 	}
 
 	/**
+	 * Returns the median percentage of base trees preserving structure throughout the tree
+	 * 
+	 * @return median percentage
+	 */
+	public double measureMdnPercBaseTreesPreservingStructure() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getMdnPercBaseTreesPreservingStructure();
+	}
+
+	/**
+	 * Returns the standard deviation percentage of base trees preserving structure throughout the tree
+	 * 
+	 * @return std deviation percentage
+	 */
+	public double measureDevPercBaseTreesPreservingStructure() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getDevPercBaseTreesPreservingStructure();
+	}
+
+	/**
 	 * Returns an enumeration of the additional measure names
 	 * (Added also those produced by the base algorithm).
 	 * 
@@ -719,6 +739,8 @@ public class J48ItPartiallyConsolidated
 		newVector.addElement("measureAvgPercBaseTreesPreservingStructure");
 		newVector.addElement("measureMinPercBaseTreesPreservingStructure");
 		newVector.addElement("measureMaxPercBaseTreesPreservingStructure");
+		newVector.addElement("measureMdnPercBaseTreesPreservingStructure");
+		newVector.addElement("measureDevPercBaseTreesPreservingStructure");
 		return newVector.elements();
 	}
 
@@ -745,6 +767,10 @@ public class J48ItPartiallyConsolidated
 			return measureMinPercBaseTreesPreservingStructure();
 		} else if (additionalMeasureName.compareToIgnoreCase("measureMaxPercBaseTreesPreservingStructure") == 0) {
 			return measureMaxPercBaseTreesPreservingStructure();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureMdnPercBaseTreesPreservingStructure") == 0) {
+			return measureMdnPercBaseTreesPreservingStructure();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureDevPercBaseTreesPreservingStructure") == 0) {
+			return measureDevPercBaseTreesPreservingStructure();
 		} else
 			throw new IllegalArgumentException(additionalMeasureName 
 					+ " not supported (J48ItPartiallyConsolidated)");

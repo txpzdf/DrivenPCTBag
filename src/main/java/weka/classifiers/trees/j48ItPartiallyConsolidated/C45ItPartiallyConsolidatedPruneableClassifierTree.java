@@ -80,6 +80,12 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	/** Maximum percentage of base trees preserving structure throughout the tree. */
 	protected double m_maxPercBaseTreesPreservingStructure = (double)Double.NaN;
 	
+	/** Median percentage of base trees preserving structure throughout the tree. */
+	protected double m_mdnPercBaseTreesPreservingStructure = (double)Double.NaN;
+	
+	/** Standard Deviation percentage of base trees preserving structure throughout the tree. */
+	protected double m_devPercBaseTreesPreservingStructure = (double)Double.NaN;
+	
 	/**
 	 * Constructor for pruneable consolidated tree structure. Calls the superclass
 	 * constructor.
@@ -533,6 +539,20 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	}
 
 	/**
+	 * @return the m_mdnPercBaseTreesPreservingStructure
+	 */
+	public double getMdnPercBaseTreesPreservingStructure() {
+		return m_mdnPercBaseTreesPreservingStructure;
+	}
+
+	/**
+	 * @return the m_devPercBaseTreesPreservingStructure
+	 */
+	public double getDevPercBaseTreesPreservingStructure() {
+		return m_devPercBaseTreesPreservingStructure;
+	}
+
+	/**
 	 * Computes the number of base trees that preserve the same structure as
 	 * the partial consolidated tree.
 	 */
@@ -543,15 +563,21 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			m_numberBaseTreesWithThisSplitDecision = 0;
 			for (int iSample = 0; iSample < numberSamples; iSample++)
 				computeWhetherBaseTreePreservesStructure((C45PruneableClassifierTreeExtended)(m_sampleTreeVector[iSample]));
-			ArrayList<Double> vPercBaseTrees = new ArrayList<>();
-			getAllPercBaseTreesPreservingStructure(vPercBaseTrees);
-			m_avgPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN);
-			m_minPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).min().orElse(Double.NaN);
-	        m_maxPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
+			ArrayList<Double> auxvPercBaseTrees = new ArrayList<>();
+			getAllPercBaseTreesPreservingStructure(auxvPercBaseTrees);
+			//m_avgPercBaseTreesPreservingStructure = auxvPercBaseTrees.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN);
+			double[] vPercBaseTrees = auxvPercBaseTrees.stream().mapToDouble(Double::doubleValue).toArray();
+			m_avgPercBaseTreesPreservingStructure = Utils.mean(vPercBaseTrees);
+			m_minPercBaseTreesPreservingStructure = vPercBaseTrees[Utils.minIndex(vPercBaseTrees)];
+	        m_maxPercBaseTreesPreservingStructure = vPercBaseTrees[Utils.maxIndex(vPercBaseTrees)];
+	        m_mdnPercBaseTreesPreservingStructure = Utils.kthSmallestValue(vPercBaseTrees, vPercBaseTrees.length / 2);
+	        m_devPercBaseTreesPreservingStructure = Math.sqrt(Utils.variance(vPercBaseTrees));
 		} else {
 			m_avgPercBaseTreesPreservingStructure = (double)100.0;
 			m_minPercBaseTreesPreservingStructure = (double)100.0;
 	        m_maxPercBaseTreesPreservingStructure = (double)100.0;
+	        m_mdnPercBaseTreesPreservingStructure = (double)100.0;
+	        m_devPercBaseTreesPreservingStructure = (double)0.0;
 		}
 	}
 	
