@@ -626,21 +626,22 @@ public class J48ItPartiallyConsolidated
 		//st += super.toString();
 		if (m_root == null)
 			st += "No classifier built";
-		else
+		else {
 			st += "J48Consolidated " + (m_ITPCTunprunedCT? "unpruned " : "") + (m_ITPCTcollapseCT? "(collapsed) " : "") + "tree\n" + 
-				toStringResamplingMethod() + m_root.toString();
-		st += toStringVisualizeBaseTrees(line);
-		st += toStringPrintExplanationMeasuresMCS();
-		if(m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure) {
-			st += "\n---------------------------------------------------"
-				+ "\nMeasures to evaluate the effect of pruning base trees"
-				+ "\nwithout preserving the structure of the partial consolidated tree:"
-				+ "\nGiven, at each node of the partial consolidated tree, the percentage"
-				+ "\nof base trees containing the same split division [Str: dd.dd%], we obtain:"
-				+ "\n· Mean: " + Utils.roundDouble(measureAvgPercBaseTreesPreservingStructure(),2) + "%"
-				+ "\n· Minimum: " + Utils.roundDouble(measureMinPercBaseTreesPreservingStructure(),2) + "%"
-				+ "\n· Maximum: " + Utils.roundDouble(measureMaxPercBaseTreesPreservingStructure(),2) + "%"
-				+ "\n---------------------------------------------------";
+					toStringResamplingMethod() + m_root.toString();
+			st += toStringVisualizeBaseTrees(line);
+			st += toStringPrintExplanationMeasuresMCS();
+			if(m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure) {
+				st += "\n---------------------------------------------------"
+					+ "\nMeasures to evaluate the effect of pruning base trees"
+					+ "\nwithout preserving the structure of the partial consolidated tree:"
+					+ "\nGiven, at each node of the partial consolidated tree, the percentage"
+					+ "\nof base trees containing the same split division [Str: dd.dd%], we obtain:"
+					+ "\n· Mean: " + Utils.roundDouble(measureAvgPercBaseTreesPreservingStructure(),2) + "%"
+					+ "\n· Minimum: " + Utils.roundDouble(measureMinPercBaseTreesPreservingStructure(),2) + "%"
+					+ "\n· Maximum: " + Utils.roundDouble(measureMaxPercBaseTreesPreservingStructure(),2) + "%"
+					+ "\n---------------------------------------------------";
+			}
 		}
 		return st;
 	}

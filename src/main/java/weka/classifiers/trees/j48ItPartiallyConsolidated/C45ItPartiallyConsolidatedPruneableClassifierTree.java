@@ -72,13 +72,13 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	protected int m_numberBaseTreesWithThisSplitDecision = 0;
 	
 	/** Average percentage of base trees preserving structure throughout the tree. */
-	protected double m_avgPercBaseTreesPreservingStructure;
+	protected double m_avgPercBaseTreesPreservingStructure = (double)Double.NaN;
 	
 	/** Minimum percentage of base trees preserving structure throughout the tree. */
-	protected double m_minPercBaseTreesPreservingStructure;
+	protected double m_minPercBaseTreesPreservingStructure = (double)Double.NaN;
 	
 	/** Maximum percentage of base trees preserving structure throughout the tree. */
-	protected double m_maxPercBaseTreesPreservingStructure;
+	protected double m_maxPercBaseTreesPreservingStructure = (double)Double.NaN;
 	
 	/**
 	 * Constructor for pruneable consolidated tree structure. Calls the superclass

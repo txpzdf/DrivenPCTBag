@@ -2,11 +2,6 @@
 <classpath>
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="src" path="src/test/java"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
-		<attributes>
-			<attribute name="module" value="true"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="lib" path="lib/arpack_combined.jar"/>
 	<classpathentry kind="lib" path="lib/bounce.jar"/>
 	<classpathentry kind="lib" path="lib/commons-compress-1.21.jar"/>
@@ -26,5 +21,6 @@
 	<classpathentry kind="lib" path="lib/mtj.jar"/>
 	<classpathentry kind="lib" path="resources/bounce-src.jar"/>
 	<classpathentry kind="lib" path="jars/J48Consolidated.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-11-openjdk-amd64"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
