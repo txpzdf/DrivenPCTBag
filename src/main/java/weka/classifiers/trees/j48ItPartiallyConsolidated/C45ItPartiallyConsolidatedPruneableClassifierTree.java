@@ -537,16 +537,22 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	 * the partial consolidated tree.
 	 */
 	public void computeNumberBaseTreesPreservingPartialCTStructure() {
-		/** Number of Samples. */
-		int numberSamples = m_sampleTreeVector.length;
-		m_numberBaseTreesWithThisSplitDecision = 0;
-		for (int iSample = 0; iSample < numberSamples; iSample++)
-			computeWhetherBaseTreePreservesStructure((C45PruneableClassifierTreeExtended)(m_sampleTreeVector[iSample]));
-		ArrayList<Double> vPercBaseTrees = new ArrayList<>();
-		getAllPercBaseTreesPreservingStructure(vPercBaseTrees);
-		m_avgPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN);
-		m_minPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).min().orElse(Double.NaN);
-        m_maxPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
+		if(m_pruneBaseTreesWithoutPreservingConsolidatedStructure) {
+			/** Number of Samples. */
+			int numberSamples = m_sampleTreeVector.length;
+			m_numberBaseTreesWithThisSplitDecision = 0;
+			for (int iSample = 0; iSample < numberSamples; iSample++)
+				computeWhetherBaseTreePreservesStructure((C45PruneableClassifierTreeExtended)(m_sampleTreeVector[iSample]));
+			ArrayList<Double> vPercBaseTrees = new ArrayList<>();
+			getAllPercBaseTreesPreservingStructure(vPercBaseTrees);
+			m_avgPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN);
+			m_minPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).min().orElse(Double.NaN);
+	        m_maxPercBaseTreesPreservingStructure = vPercBaseTrees.stream().mapToDouble(Double::doubleValue).max().orElse(Double.NaN);
+		} else {
+			m_avgPercBaseTreesPreservingStructure = (double)100.0;
+			m_minPercBaseTreesPreservingStructure = (double)100.0;
+	        m_maxPercBaseTreesPreservingStructure = (double)100.0;
+		}
 	}
 	
 	public void computeWhetherBaseTreePreservesStructure(ClassifierTree baseTree) {
