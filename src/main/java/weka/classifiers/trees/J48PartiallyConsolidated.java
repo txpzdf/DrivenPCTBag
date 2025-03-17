@@ -868,11 +868,7 @@ public class J48PartiallyConsolidated
 			case 3: // Sum
 				res = Utils.sum(vValues); break;
 			case 4: // Mdn
-				// // TODO median could be a method to insert in the class 'DoubleVector'
-				DoubleVector auxValues = new DoubleVector(vValues);
-				auxValues.sort();
-				res = auxValues.get(((m_Classifiers.length+1)/2)-1);
-				break;
+				res = Utils.kthSmallestValue(vValues, m_Classifiers.length / 2); break;
 			case 5: // Dev 
 				res = Math.sqrt(Utils.variance(vValues)); break;
 		}
