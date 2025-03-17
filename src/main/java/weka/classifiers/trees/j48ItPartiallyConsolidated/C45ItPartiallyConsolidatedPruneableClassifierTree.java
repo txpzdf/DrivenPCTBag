@@ -212,7 +212,8 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			if (m_cleanup)
 				cleanup(new Instances(data, 0));
 		}
-		computeNumberBaseTreesPreservingPartialCTStructure();
+		if(!m_isLeaf)
+			computeNumberBaseTreesPreservingPartialCTStructure();
 	}
 
 	/**
