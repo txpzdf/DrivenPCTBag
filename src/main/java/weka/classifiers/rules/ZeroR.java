@@ -440,12 +440,16 @@ WeightedInstancesHandler, Sourcable, AdditionalMeasureProducer, Summarizable {
 		
 		AttributeStats as = m_data.attributeStats(m_data.classIndex());
 		int[] classCounts = as.nominalCounts;
-		int i_iMinClass;
-		for(i_iMinClass = 0; ((i_iMinClass < classCounts.length) && (Utils.kthSmallestValue(classCounts, i_iMinClass) == 0)); i_iMinClass++);
-		if(i_iMinClass < classCounts.length)
-			return (double)i_iMinClass;
-		else 
-			return (double)-1;
+		int iClass, iMinClass;
+		for(iClass = 0; ((iClass < classCounts.length) && (classCounts[iClass] == 0)); iClass++);
+		iMinClass = iClass;
+		for(iClass = iMinClass+1; (iClass < classCounts.length) ; iClass++) {
+			if(classCounts[iClass] == 0)
+				continue;
+			if(classCounts[iClass] < classCounts[iMinClass])
+				iMinClass = iClass;
+		}
+		return (double)iMinClass;
 	}
 
 	/**
