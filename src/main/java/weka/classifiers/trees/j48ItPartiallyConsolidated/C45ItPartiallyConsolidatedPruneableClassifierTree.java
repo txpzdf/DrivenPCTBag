@@ -10,7 +10,6 @@ import weka.classifiers.trees.j48PartiallyConsolidated.C45PruneableClassifierTre
 
 import java.util.ArrayList;
 
-import weka.classifiers.trees.J48It;
 import weka.classifiers.trees.J48ItPartiallyConsolidated;
 import weka.classifiers.trees.j48.C45Split;
 import weka.classifiers.trees.j48.ClassifierSplitModel;
@@ -132,7 +131,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	public void buildClassifier(Instances data, Instances[] samplesVector, float consolidationPercent,
 			int consolidationNumberHowToSet) throws Exception {
 		long trainTimeStart = 0, trainTimeElapsed = 0;
-		if (m_priorityCriteria == J48It.Original) {
+		if (m_priorityCriteria == J48ItPartiallyConsolidated.Original) {
 
 			m_pruneTheTree = m_pruneTheConsolidatedTree;
 			m_collapseTheTree = m_collapseTheCTree;
@@ -154,7 +153,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 				System.out.println("Time taken to build the whole consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
 				m_elapsedTimeTrainingWholeCT = trainTimeElapsed / (double)1000.0;
 
-				if (m_priorityCriteria == J48It.Levelbylevel) {
+				if (m_priorityCriteria == J48ItPartiallyConsolidated.Levelbylevel) {
 
 					// Number of levels of the consolidated tree
 					int treeLevels = numLevels();
@@ -292,9 +291,9 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 				currentTree.m_sampleTreeVector[iSample].setLocalModel(currentSamplesVector[iSample],
 						currentTree.m_localModel);
 
-			if ((currentTree.m_localModel.numSubsets() > 1) && ((m_priorityCriteria == J48It.Original)
-					|| ((m_priorityCriteria == J48It.Levelbylevel) && (currentLevel < m_maximumCriteria))
-					|| ((m_priorityCriteria > J48It.Levelbylevel) && (internalNodes < m_maximumCriteria)))) {
+			if ((currentTree.m_localModel.numSubsets() > 1) && ((m_priorityCriteria == J48ItPartiallyConsolidated.Original)
+					|| ((m_priorityCriteria == J48ItPartiallyConsolidated.Levelbylevel) && (currentLevel < m_maximumCriteria))
+					|| ((m_priorityCriteria > J48ItPartiallyConsolidated.Levelbylevel) && (internalNodes < m_maximumCriteria)))) {
 
 				/** Vector storing the obtained subsamples after the split of data */
 				Instances[] localInstances;
@@ -362,46 +361,33 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 								currentLevel + 1 };
 						addSonOrderedByValue(list, son);
 
-					} else if (m_priorityCriteria == J48ItPartiallyConsolidated.Gainratio) // Added by gainratio,
+					} else if ((m_priorityCriteria >= J48ItPartiallyConsolidated.GainratioWholeData) &&
+								(m_priorityCriteria <= J48ItPartiallyConsolidated.GainratioSetSamples_Size)) // Added by gainratio,
 																							// largest to smallest
 					{
-						ClassifierSplitModel sonModel = ((C45ItPartiallyConsolidatedPruneableClassifierTree) newTree).m_toSelectModel
-								.selectModel(localInstances[iSon]);
-						if (sonModel.numSubsets() > 1) {
+						ClassifierSplitModel sonModel;
+						if ((m_priorityCriteria == J48ItPartiallyConsolidated.GainratioWholeData) ||
+								(m_priorityCriteria == J48ItPartiallyConsolidated.GainratioWholeData_Size))
+							sonModel = newTree.m_toSelectModel.
+									selectModel(localInstances[iSon]);
+						else
+							sonModel = ((C45ConsolidatedModelSelection)newTree.m_toSelectModel).
+									selectModel(localInstances[iSon], localSamplesVector);
 
+						if (sonModel.numSubsets() > 1) {
 							orderValue = ((C45Split) sonModel).gainRatio();
-
-						} else {
-
-							orderValue = (double) Double.MIN_VALUE;
+							if ((m_priorityCriteria == J48ItPartiallyConsolidated.GainratioWholeData_Size) ||
+									(m_priorityCriteria == J48ItPartiallyConsolidated.GainratioSetSamples_Size)) {
+								double size = currentTree.m_localModel.distribution().perBag(iSon);
+								orderValue = orderValue * size;
+							}
 						}
+						else
+							orderValue = (double) Double.MIN_VALUE;
+						
 						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue,
 								currentLevel + 1 };
 						addSonOrderedByValue(list, son);
-
-					} else if (m_priorityCriteria == J48ItPartiallyConsolidated.Gainratio_normalized) // Added by
-																										// gainratio
-																										// normalized,
-					// largest to smallest
-					{
-
-						double size = currentTree.m_localModel.distribution().perBag(iSon);
-						double gainRatio;
-						ClassifierSplitModel sonModel = ((C45ItPartiallyConsolidatedPruneableClassifierTree) newTree).m_toSelectModel
-								.selectModel(localInstances[iSon]);
-						if (sonModel.numSubsets() > 1) {
-
-							gainRatio = ((C45Split) sonModel).gainRatio();
-							orderValue = size * gainRatio;
-
-						} else {
-
-							orderValue = (double) Double.MIN_VALUE;
-						}
-						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue,
-								currentLevel + 1 };
-						addSonOrderedByValue(list, son);
-
 					} else {
 						listSons.add(new Object[] { localInstances[iSon], localSamplesVector, newTree, 0,
 								currentLevel + 1 });

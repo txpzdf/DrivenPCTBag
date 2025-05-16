@@ -210,8 +210,10 @@ public class J48ItPartiallyConsolidated
 	public static final int Levelbylevel = 1;
 	public static final int Preorder = 2;
 	public static final int Size = 3;
-	public static final int Gainratio = 4;
-	public static final int Gainratio_normalized = 5;
+	public static final int GainratioWholeData = 4;
+	public static final int GainratioSetSamples = 5;
+	public static final int GainratioWholeData_Size = 6;
+	public static final int GainratioSetSamples_Size = 7;
 
 	
 	/** Strings related to the ways to set the priority criteria option */
@@ -220,9 +222,10 @@ public class J48ItPartiallyConsolidated
 			new Tag(Levelbylevel, "Level by level"),
 			new Tag(Preorder, "Node by node - Preorder"),
 			new Tag(Size, "Node by node - Size"),
-			new Tag(Gainratio, "Node by node - Gainratio"),
-			new Tag(Gainratio_normalized, "Node by node - Normalized gainratio"),
-
+			new Tag(GainratioWholeData, "Node by node - Gain ratio (Whole data)"),
+			new Tag(GainratioSetSamples, "Node by node - Gain ratio (Set of samples)"),
+			new Tag(GainratioWholeData_Size, "Node by node - Gain ratio (Whole data) * Size"),
+			new Tag(GainratioSetSamples_Size, "Node by node - Gain ratio (Set of samples) * Size")
 	};
 	
 	private int m_ITPCTpriorityCriteria = Original;
@@ -457,9 +460,11 @@ public class J48ItPartiallyConsolidated
 		newVector.addElement(new Option("\tBuild the tree as it was originally built.", "ITPCT-PO", 0, "-ITPCT-PO"));
 		newVector.addElement(new Option("\tBuild the tree level by level.", "ITPCT-PL", 0, "-ITPCT-PL"));
 		newVector.addElement(new Option("\tBuild the tree in preorder.", "ITPCT-PP", 0, "-ITPCT-PP"));
-		newVector.addElement(new Option("\tBuild the tree ordered by size.", "ITPCT-PS", 0, "-ITPCT-PS"));
-		newVector.addElement(new Option("\tBuild the tree ordered by gainratio.", "ITPCT-PG", 0, "-ITPCT-PG"));
-		newVector.addElement(new Option("\tBuild the tree ordered by normalized gainratio.", "ITPCT-PGN", 0, "-ITPCT-PGN"));
+		newVector.addElement(new Option("\tBuild the tree driven by size.", "ITPCT-PS", 0, "-ITPCT-PS"));
+		newVector.addElement(new Option("\tBuild the tree driven by gain ratio (Whole data).", "ITPCT-PGD", 0, "-ITPCT-PGD"));
+		newVector.addElement(new Option("\tBuild the tree driven by gain ratio (Set of samples).", "ITPCT-PGS", 0, "-ITPCT-PGS"));
+		newVector.addElement(new Option("\tBuild the tree driven by gain ratio (Whole data) weighted by Size.", "ITPCT-PGDS", 0, "-ITPCT-PGDS"));
+		newVector.addElement(new Option("\tBuild the tree driven by gain ratio (Set of samples) weighted by Size.", "ITPCT-PGSS", 0, "-ITPCT-PGSS"));
 		newVector.addElement(new Option("\tSet the number of nodes or levels to be generated based on a value\\n\" +\n"
 				+ "				\"\\tas a percentage (by default)", "ITPCT-P", 0, "-ITPCT-P"));
 		newVector.addElement(new Option("\tSet the number of nodes or levels to be generated based on a numeric value", "ITPCT-V", 0, "-ITPCT-V"));
@@ -515,10 +520,14 @@ public class J48ItPartiallyConsolidated
 			setITPCTpriorityCriteria(new SelectedTag(Preorder, TAGS_WAYS_TO_SET_PRIORITY_CRITERIA));
 		else if (Utils.getFlag("ITPCT-PS", options))
 			setITPCTpriorityCriteria(new SelectedTag(Size, TAGS_WAYS_TO_SET_PRIORITY_CRITERIA));
-		else if (Utils.getFlag("ITPCT-PG", options))
-			setITPCTpriorityCriteria(new SelectedTag(Gainratio, TAGS_WAYS_TO_SET_PRIORITY_CRITERIA));
-		else if (Utils.getFlag("ITPCT-PGN", options))
-			setITPCTpriorityCriteria(new SelectedTag(Gainratio_normalized, TAGS_WAYS_TO_SET_PRIORITY_CRITERIA));
+		else if (Utils.getFlag("ITPCT-PGD", options))
+			setITPCTpriorityCriteria(new SelectedTag(GainratioWholeData, TAGS_WAYS_TO_SET_PRIORITY_CRITERIA));
+		else if (Utils.getFlag("ITPCT-PGS", options))
+			setITPCTpriorityCriteria(new SelectedTag(GainratioSetSamples, TAGS_WAYS_TO_SET_PRIORITY_CRITERIA));
+		else if (Utils.getFlag("ITPCT-PGDS", options))
+			setITPCTpriorityCriteria(new SelectedTag(GainratioWholeData_Size, TAGS_WAYS_TO_SET_PRIORITY_CRITERIA));
+		else if (Utils.getFlag("ITPCT-PGSS", options))
+			setITPCTpriorityCriteria(new SelectedTag(GainratioSetSamples_Size, TAGS_WAYS_TO_SET_PRIORITY_CRITERIA));
 		
 		m_ITPCTunprunedCT = Utils.getFlag("ITPCT-U", options);
 		m_ITPCTcollapseCT = Utils.getFlag("ITPCT-C", options);
@@ -546,10 +555,14 @@ public class J48ItPartiallyConsolidated
 				options.add("-ITPCT-PP");break;
 			case Size:
 				options.add("-ITPCT-PS");break;
-			case Gainratio:
-				options.add("-ITPCT-PG");break;
-			case Gainratio_normalized:
-				options.add("-ITPCT-PGN");break;
+			case GainratioWholeData:
+				options.add("-ITPCT-PGD");break;
+			case GainratioSetSamples:
+				options.add("-ITPCT-PGS");break;
+			case GainratioWholeData_Size:
+				options.add("-ITPCT-PGDS");break;
+			case GainratioSetSamples_Size:
+				options.add("-ITPCT-PGSS");break;
 		}
 		if (m_ITPCTconsolidationPercentHowToSet == ConsolidationNumber_Value) options.add("-ITPCT-V");
 		else options.add("-ITPCT-P");
@@ -589,10 +602,14 @@ public class J48ItPartiallyConsolidated
 				st += "Node by node - Preorder";break;
 			case Size:
 				st += "Node by node - Size";break;
-			case Gainratio:
-				st += "Node by node - Gainratio";break;
-			case Gainratio_normalized:
-				st += "Node by node - Gainratio weighted by Size";break;
+			case GainratioWholeData:
+				st += "Node by node - Gain ratio (Whole data)";break;
+			case GainratioSetSamples:
+				st += "Node by node - Gain ratio (Set of samples)";break;
+			case GainratioWholeData_Size:
+				st += "Node by node - Gain ratio (Whole data) weighted by Size";break;
+			case GainratioSetSamples_Size:
+				st += "Node by node - Gain ratio (Set of samples) weighted by Size";break;
 		}
 		st += "\n";
 		if (m_ITPCTconsolidationPercentHowToSet == ConsolidationNumber_Percentage) {
@@ -807,7 +824,9 @@ public class J48ItPartiallyConsolidated
 		{
 			int newPriority = newPriorityCriteria.getSelectedTag().getID();
 
-			if (newPriority == Original || newPriority == Levelbylevel || newPriority == Preorder || newPriority == Size || newPriority == Gainratio || newPriority == Gainratio_normalized)
+			if (newPriority == Original || newPriority == Levelbylevel || newPriority == Preorder || newPriority == Size || 
+				newPriority == GainratioWholeData || newPriority == GainratioWholeData_Size ||
+				newPriority == GainratioSetSamples || newPriority == GainratioSetSamples_Size)
 				m_ITPCTpriorityCriteria = newPriority;
 			else 
 				throw new IllegalArgumentException("Wrong selection type, value should be: "
