@@ -47,6 +47,9 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 
 	/** Indicates the criteria that should be used to build the tree */
 	private int m_priorityCriteria;
+	
+	/** Indicates the heuristic search algorithm that should be used to build the tree */
+	private int m_heuristicSearchAlgorithm;
 
 	/** True if the partial Consolidated tree(CT) is to be pruned. */
 	protected boolean m_pruneTheConsolidatedTree = false;
@@ -98,6 +101,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	 * @param numberSamples         Number of Samples
 	 * @param ITPCTmaximumCriteria  maximum number of nodes or levels
 	 * @param ITPCTpriorityCriteria criteria to build the tree
+	 * @param ITPCTheuristicSearchAlgorithm search algorithm to build the tree
 	 * @param pruneCT true if the CT tree is to be pruned
 	 * @param collapseCT true if the CT tree is to be collapsed
 	 * @throws Exception if something goes wrong
@@ -108,11 +112,13 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			boolean raiseTree, boolean cleanup, 
 			boolean collapseTree, int numberSamples,
 			boolean notPreservingStructure,
-			int ITPCTpriorityCriteria, boolean pruneCT, boolean collapseCT) throws Exception {
+			int ITPCTpriorityCriteria, int ITPCTheuristicSearchAlgorithm, 
+			boolean pruneCT, boolean collapseCT) throws Exception {
 		super(toSelectLocModel, baseModelToForceDecision, pruneTree, cf, raiseTree, cleanup, collapseTree,
 				numberSamples, notPreservingStructure);
 
 		m_priorityCriteria = ITPCTpriorityCriteria;
+		m_heuristicSearchAlgorithm = ITPCTheuristicSearchAlgorithm;
 		m_pruneTheConsolidatedTree = pruneCT;
 		m_collapseTheCTree = collapseCT;
 		m_pruneBaseTreesWithoutPreservingConsolidatedStructure=notPreservingStructure;
@@ -345,7 +351,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 							currentTree.m_toSelectModel, baseModelToForceDecision, m_pruneTheTree, m_CF,
 							m_subtreeRaising, m_cleanup, m_collapseTheTree, localSamplesVector.length,
 							m_pruneBaseTreesWithoutPreservingConsolidatedStructure,
-							m_priorityCriteria, m_pruneTheConsolidatedTree, m_collapseTheCTree);
+							m_priorityCriteria, m_heuristicSearchAlgorithm, m_pruneTheConsolidatedTree, m_collapseTheCTree);
 
 					/** Set the recent created base trees like the sons of the given parent node */
 					for (int iSample = 0; iSample < numberSamples; iSample++)
@@ -359,7 +365,10 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 
 						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue,
 								currentLevel + 1 };
-						addSonOrderedByValue(list, son);
+						if (m_heuristicSearchAlgorithm == J48ItPartiallyConsolidated.BestFirst)
+							addSonOrderedByValue(list, son);
+						else
+							addSonOrderedByValue(listSons, son);
 
 					} else if ((m_priorityCriteria >= J48ItPartiallyConsolidated.GainratioWholeData) &&
 								(m_priorityCriteria <= J48ItPartiallyConsolidated.GainratioSetSamples_Size)) // Added by gainratio,
@@ -387,7 +396,10 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 						
 						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue,
 								currentLevel + 1 };
-						addSonOrderedByValue(list, son);
+						if (m_heuristicSearchAlgorithm == J48ItPartiallyConsolidated.BestFirst)
+							addSonOrderedByValue(list, son);
+						else
+							addSonOrderedByValue(listSons, son);
 					} else {
 						listSons.add(new Object[] { localInstances[iSon], localSamplesVector, newTree, 0,
 								currentLevel + 1 });
@@ -399,12 +411,11 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 					localSamplesVector = null;
 				}
 
-				if (m_priorityCriteria == J48ItPartiallyConsolidated.Levelbylevel) { // Level by level
+				if (m_priorityCriteria == J48ItPartiallyConsolidated.Levelbylevel)
 					list.addAll(listSons);
-				}
-
-				else if (m_priorityCriteria == J48ItPartiallyConsolidated.Preorder
-						|| m_priorityCriteria == J48ItPartiallyConsolidated.Original) { // Preorder
+				else if ((m_priorityCriteria == J48ItPartiallyConsolidated.Preorder) ||
+							(m_priorityCriteria == J48ItPartiallyConsolidated.Original) ||
+							(m_heuristicSearchAlgorithm == J48ItPartiallyConsolidated.HillClimbing)) {
 					listSons.addAll(list);
 					list = listSons;
 				}

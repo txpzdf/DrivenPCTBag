@@ -228,7 +228,19 @@ public class J48ItPartiallyConsolidated
 			new Tag(GainratioSetSamples_Size, "Node by node - Gain ratio (Set of samples) * Size")
 	};
 	
-	private int m_ITPCTpriorityCriteria = Original;
+	private int m_ITPCTpriorityCriteria = Size;
+	
+	/** Ways to set the heuristic search algorithm */
+	public static final int BestFirst = 0;
+	public static final int HillClimbing = 1;
+	
+	private int m_ITPCTheuristicSearchAlgorithm = HillClimbing;
+	
+	/** Strings related to the ways to set the heuristic search algorithm */
+	public static final Tag[] TAGS_WAYS_TO_SET_SEARCH_ALGORITHM = {
+			new Tag(BestFirst, "Best-first (Original)"),
+			new Tag(HillClimbing, "Hill climbing (In-depth)")
+	};
 	
 	/** Ways to set the consolidationNumber option */
 	public static final int ConsolidationNumber_Value = 1;
@@ -331,7 +343,7 @@ public class J48ItPartiallyConsolidated
 				new C45ItPartiallyConsolidatedPruneableClassifierTree(modSelection, baseModelToForceDecision,
 						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length,
 						m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure,
-						m_ITPCTpriorityCriteria, !m_ITPCTunprunedCT, m_ITPCTcollapseCT);
+						m_ITPCTpriorityCriteria, m_ITPCTheuristicSearchAlgorithm, !m_ITPCTunprunedCT, m_ITPCTcollapseCT);
 
 		localClassifier.buildClassifier(instances, samplesVector, m_PCTBconsolidationPercent, m_ITPCTconsolidationPercentHowToSet);
 
@@ -442,6 +454,10 @@ public class J48ItPartiallyConsolidated
 	 * Build the tree with a maximum number of levels or nodes.
 	 * <p>
 	 * 
+	 * -ITPCT-HC <br>
+	 * Build the tree ordered by a criteria using Hill Climbing (instead of Best-first).
+	 * <p>
+	 * 
 	 * -ITPCT-U <br>
 	 * Use unpruned partial Consolidated Tree (CT).
 	 * <p>
@@ -465,6 +481,11 @@ public class J48ItPartiallyConsolidated
 		newVector.addElement(new Option("\tBuild the tree driven by gain ratio (Set of samples).", "ITPCT-PGS", 0, "-ITPCT-PGS"));
 		newVector.addElement(new Option("\tBuild the tree driven by gain ratio (Whole data) weighted by Size.", "ITPCT-PGDS", 0, "-ITPCT-PGDS"));
 		newVector.addElement(new Option("\tBuild the tree driven by gain ratio (Set of samples) weighted by Size.", "ITPCT-PGSS", 0, "-ITPCT-PGSS"));
+		
+		newVector.addElement(new Option("\tSet the heuristic search algorithm to be used with the priority criteria to build the tree as Hill Climbing\n" +
+				"\t, instead of Best-first (by default).", "ITPCT-HC", 0, "-ITPCT-HC"));
+		
+		
 		newVector.addElement(new Option("\tSet the number of nodes or levels to be generated based on a value\\n\" +\n"
 				+ "				\"\\tas a percentage (by default)", "ITPCT-P", 0, "-ITPCT-P"));
 		newVector.addElement(new Option("\tSet the number of nodes or levels to be generated based on a numeric value", "ITPCT-V", 0, "-ITPCT-V"));
@@ -491,6 +512,10 @@ public class J48ItPartiallyConsolidated
 	 * 
 	 * -ITPCT-P <br>
 	 * Build the tree ordered by a criteria.
+	 * <p>
+	 * 
+	 * -ITPCT-HC <br>
+	 * Build the tree ordered by a criteria using Hill Climbing (instead of Best-first).
 	 * <p>
 	 * 
 	 * -ITPCT-U <br>
@@ -529,6 +554,11 @@ public class J48ItPartiallyConsolidated
 		else if (Utils.getFlag("ITPCT-PGSS", options))
 			setITPCTpriorityCriteria(new SelectedTag(GainratioSetSamples_Size, TAGS_WAYS_TO_SET_PRIORITY_CRITERIA));
 		
+		if (Utils.getFlag("ITPCT-HC", options))
+			setITPCTheuristicSearchAlgorithm(new SelectedTag(HillClimbing, TAGS_WAYS_TO_SET_SEARCH_ALGORITHM));
+		else
+			setITPCTheuristicSearchAlgorithm(new SelectedTag(BestFirst, TAGS_WAYS_TO_SET_SEARCH_ALGORITHM));
+
 		m_ITPCTunprunedCT = Utils.getFlag("ITPCT-U", options);
 		m_ITPCTcollapseCT = Utils.getFlag("ITPCT-C", options);
 
@@ -564,6 +594,10 @@ public class J48ItPartiallyConsolidated
 			case GainratioSetSamples_Size:
 				options.add("-ITPCT-PGSS");break;
 		}
+		if (m_ITPCTheuristicSearchAlgorithm == HillClimbing) {
+			options.add("-ITPCT-HC");
+		}
+
 		if (m_ITPCTconsolidationPercentHowToSet == ConsolidationNumber_Value) options.add("-ITPCT-V");
 		else options.add("-ITPCT-P");
 
@@ -612,6 +646,12 @@ public class J48ItPartiallyConsolidated
 				st += "Node by node - Gain ratio (Set of samples) weighted by Size";break;
 		}
 		st += "\n";
+		if((m_ITPCTpriorityCriteria >= Size) && (m_ITPCTpriorityCriteria <= GainratioSetSamples_Size)) {
+			if(m_ITPCTheuristicSearchAlgorithm == HillClimbing)
+				st += " using Hill Climbing as heuristic search algorithm\n";
+			else
+				st += " using Best-first as heuristic search algorithm\n";
+		}
 		if (m_ITPCTconsolidationPercentHowToSet == ConsolidationNumber_Percentage) {
 			if (m_ITPCTpriorityCriteria == Levelbylevel) {
 				st += "Consolidation percent (in terms of number of levels of the tree) = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%";
@@ -833,6 +873,48 @@ public class J48ItPartiallyConsolidated
 						+ "between 0 and 5");
 		}
 	}
+	
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String ITPCTheuristicSearchAlgorithmTipText() {
+		return "Way to set the heuristic search algorithm to be used with the priority criteria to build the tree:\n" +
+				" * Best-first (by default)\n" +
+				" * Hill Climbing\n";
+	}
+	
+	/**
+	 * Get the value of ITPCTheuristicSearchAlgorithm.
+	 *
+	 * @return Value of ITPCTheuristicSearchAlgorithm.
+	 */
+	public SelectedTag getITPCTheuristicSearchAlgorithm() {
+		return new SelectedTag(m_ITPCTheuristicSearchAlgorithm,
+				TAGS_WAYS_TO_SET_SEARCH_ALGORITHM);
+	}
+
+	/**
+	 * Set the value of ITPCTheuristicSearchAlgorithm. Values other than
+	 * BestFirst, or HillClimbing will be ignored.
+	 *
+	 * @param newWayToSetSearchAlgorithm the way to set the heuristic search algorithm to use
+	 * @throws Exception if an option is not supported
+	 */
+	public void setITPCTheuristicSearchAlgorithm(SelectedTag newWayToSetSearchAlgorithm) throws Exception {
+		if (newWayToSetSearchAlgorithm.getTags() == TAGS_WAYS_TO_SET_SEARCH_ALGORITHM) 
+		{
+			int newEvWay = newWayToSetSearchAlgorithm.getSelectedTag().getID();
+
+			if (newEvWay == BestFirst || newEvWay == HillClimbing)
+				m_ITPCTheuristicSearchAlgorithm = newEvWay;
+			else 
+				throw new IllegalArgumentException("Wrong selection type, value should be: "
+						+ "BestFirst or HillClimbing");
+		}
+	}
+	
 	/**
 	 * Returns the tip text for this property
 	 * @return tip text for this property suitable for
@@ -864,7 +946,6 @@ public class J48ItPartiallyConsolidated
 				TAGS_WAYS_TO_SET_CONSOLIDATION_NUMBER);
 	}
 	
-
 	/**
 	 * Set the value of ITPCTconsolidationPercentHowToSet. Values other than
 	 * ConsolidationNumber_Percentage, or ConsolidationNumber_Value will be ignored.
