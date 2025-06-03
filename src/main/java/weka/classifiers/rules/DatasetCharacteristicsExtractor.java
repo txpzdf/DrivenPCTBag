@@ -41,7 +41,7 @@ import weka.core.TechnicalInformation.Type;
 /**
  * <!-- globalinfo-start -->
  * Class for extracting the main descriptive characteristics of a dataset based on WEKA's simplest classifier, ZeroR.<p/>
- * When used as a classification algorithm in the WEKA's Experimenter, it returns the descriptive features (number of classes, number of attributes...) of a set of datasets as if they were metrics (Comparison field) used to evaluate the goodness of the classifier (like Percent_correct, Area_under_ROC, Elapsed_Time_training...).<p/>
+ * When used as a classification algorithm in the WEKA's Experimenter (located in the "rules" group), it returns the descriptive features (number of classes, number of attributes...) of a set of datasets as if they were metrics (Comparison field) used to evaluate the goodness of the classifier (like Percent_correct, Area_under_ROC, Elapsed_Time_training...).<p/>
  * For proper results configuration (Setup tab of the Experimenter), it's recommended to set the 'Experiment Type' to "Train/Test Percentage Split (order preserved)" with 100% 'Train Percentage'.
  * This ensures measures like Number_of_training_instances or NumMissingValuesDataset aren't affected by Train/Test data splits of the default 'Cross-validation' option.<p/>
  * To obtain research-ready results, specify 'CSV file' as 'Results Destination' and provide a filename. After running the experiment, the generated CSV can be opened in spreadsheet software, displaying datasets in rows and their complete features (plus ZeroR metrics) in columns - similar to the dataset description tables commonly found in machine learning publications.<p/>
@@ -63,10 +63,11 @@ import weka.core.TechnicalInformation.Type;
  * <li><b>PercentMinClass</b>: Percentage of examples of minority class (discarding empty classes)</li>
  * <li><b>NumMajClass</b>: Number of examples of majority class</li>
  * <li><b>PercentMajClass</b>: Percentage of examples of majority class</li>
+ * <li><b>ImbalancedRatio</b>: Imbalanced Ratio (IR)</li>
  * </ul>
  * This class was used in the following paper where an extensive experimentation was carried out with 96 different datasets:<br/>
  * Jes&uacute;s M. P&eacute;rez and Olatz Arbelaitz.  
- * "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning". Information Sciences (2025), in Press.
+ * "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning". Information Sciences (2025), submitted.
  * <a href="https://doi.org/10.1016/j.ins.2025.XX.XXX" target="_blank">doi:10.1016/j.ins.2025.XX.XXX</a>
  * <p/>
  * <!-- globalinfo-end -->
@@ -75,7 +76,7 @@ import weka.core.TechnicalInformation.Type;
  * <pre>
  * &#64;article{Perez2025,
  *    title = "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning",
- *    journal = "Information Sciences (in Press)",
+ *    journal = "Information Sciences (submitted)",
  *    volume = "",
  *    number = "",
  *    pages = "1 - X",
@@ -120,7 +121,7 @@ public class DatasetCharacteristicsExtractor
 	 */
 	public String globalInfo() {
 		return "Class for extracting the main descriptive characteristics of a dataset based on WEKA's simplest classifier, ZeroR.\n"
-				+ "When used as a classification algorithm in the WEKA's Experimenter, it returns the descriptive features "
+				+ "When used as a classification algorithm in the WEKA's Experimenter (located in the \"rules\" group), it returns the descriptive features "
 				+ "(number of classes, number of attributes...) of a set of datasets as if they were metrics (Comparison field) "
 				+ "used to evaluate the goodness of the classifier (like Percent_correct, Area_under_ROC, Elapsed_Time_training...).\n\n"
 				
@@ -150,7 +151,8 @@ public class DatasetCharacteristicsExtractor
 				+ " · NumMinClass: Number of examples of minority class (discarding empty classes)\n"
 				+ " · PercentMinClass: Percentage of examples of minority class (discarding empty classes)\n"
 				+ " · NumMajClass: Number of examples of majority class\n"
-				+ " · PercentMajClass: Percentage of examples of majority class\n\n"
+				+ " · PercentMajClass: Percentage of examples of majority class\n"
+				+ " · ImbalancedRatio: Imbalanced Ratio (IR)\n\n"
 				
 				+ "This class was used in the following paper where an extensive experimentation was carried out with 96 different datasets:\n"
 				+ getTechnicalInformation().toString();
@@ -171,7 +173,7 @@ public class DatasetCharacteristicsExtractor
 		result.setValue(Field.AUTHOR, "Jesús M. Pérez and Olatz Arbelaitz");
 		result.setValue(Field.YEAR, "2025");
 		result.setValue(Field.TITLE, "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning");
-	    result.setValue(Field.JOURNAL, "Information Sciences");
+	    result.setValue(Field.JOURNAL, "Information Sciences (submitted)");
 	    result.setValue(Field.VOLUME, "");
 	    result.setValue(Field.PAGES, "1-XX");
 	    result.setValue(Field.URL, "https://doi.org/10.1016/j.ins.2025.XX.XXX");
@@ -457,13 +459,23 @@ public class DatasetCharacteristicsExtractor
 	}
 
 	/**
+	 * Returns the Imbalanced Ratio (IR) of the dataset. 
+	 * 
+	 * @return the Imbalanced Ratio (IR) of the dataset.
+	 */
+	public double measureImbalancedRatio() {
+
+		return measureNumMajClass()/measureNumMinClass();
+	}
+
+	/**
 	 * Returns an enumeration of the additional measure names
 	 * 
 	 * @return an enumeration of the measure names
 	 */
 	@Override
 	public Enumeration<String> enumerateMeasures() {
-		Vector<String> newVector = new Vector<String>(3);
+		Vector<String> newVector = new Vector<String>();
 		newVector.addElement("measureNumAttributes");
 		newVector.addElement("measureNumNumericAttributes");
 		newVector.addElement("measureNumNominalAttributes");
@@ -480,6 +492,7 @@ public class DatasetCharacteristicsExtractor
 		newVector.addElement("measureMajClassIndex");
 		newVector.addElement("measureNumMajClass");
 		newVector.addElement("measurePercentMajClass");
+		newVector.addElement("measureImbalancedRatio");
 		return newVector.elements();
 	}
 
@@ -524,6 +537,8 @@ public class DatasetCharacteristicsExtractor
 			return measureNumMajClass();
 		} else if (additionalMeasureName.compareToIgnoreCase("measurePercentMajClass") == 0) {
 			return measurePercentMajClass();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureImbalancedRatio") == 0) {
+			return measureImbalancedRatio();
 		} else {
 			throw new IllegalArgumentException(additionalMeasureName
 					+ " not supported (ZeroR)");
@@ -538,6 +553,8 @@ public class DatasetCharacteristicsExtractor
 	@Override
 	public String toSummaryString() {
 
+		if (m_data == null)
+			return "No data";
 		int numInstances = m_data.numInstances();
 		Attribute cl = m_data.classAttribute();
 		//at.enumerateValues()
@@ -546,24 +563,36 @@ public class DatasetCharacteristicsExtractor
 
 		String lineResult = "Classes:\n";
 		for(int i = 0; i < classCounts.length; i++) {
+			lineResult += cl.value(i);
 			if (i < classCounts.length - 1)
-				lineResult = lineResult +  cl.value(i) +", ";
+				lineResult += ", ";
 			else
-				lineResult = lineResult + cl.value(i) + "\n";
+				lineResult += "\n";
 		}
 		for(int i = 0; i < classCounts.length; i++) {
+			lineResult += classCounts[i];
 			if (i < classCounts.length - 1)
-				lineResult = lineResult +  classCounts[i] +", ";
+				lineResult += ", ";
 			else
-				lineResult = lineResult + classCounts[i] + "\n";
+				lineResult += "\n";
 		}
 		for(int i = 0; i < classCounts.length; i++) {
-			if (i < classCounts.length - 1)
-				lineResult = lineResult + Utils.doubleToString((double)classCounts[i]/numInstances*100, 3 + m_numDecimalPlaces, m_numDecimalPlaces) + ", ";
+			if (Utils.eq(classCounts[i], (double)0.0))
+				lineResult += "0.0";
 			else
-				lineResult = lineResult + Utils.doubleToString((double)classCounts[i]/numInstances*100, 3 + m_numDecimalPlaces, m_numDecimalPlaces) + "\n";
+				lineResult += Utils.doubleToString((double)classCounts[i]/numInstances*100, 3 + m_numDecimalPlaces, m_numDecimalPlaces);
+			if (i < classCounts.length - 1)
+				lineResult += ", ";
+			else
+				lineResult += "\n";
 		}
-		return lineResult + " \n";
+		lineResult += "Imbalanced Ratio (IR): ";
+		lineResult += (int)measureNumMajClass(); 
+		lineResult += "/";
+		lineResult += (int)measureNumMinClass(); 
+		lineResult += "=" + Utils.doubleToString(measureImbalancedRatio(), 3 + m_numDecimalPlaces, m_numDecimalPlaces);
+		lineResult += "\n\n";
+		return lineResult;
 	}
 
 	/**
