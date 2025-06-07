@@ -52,7 +52,6 @@ import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
 import weka.core.WeightedInstancesHandler;
-import weka.core.matrix.DoubleVector;
 import weka.core.TechnicalInformation.Field;
 import weka.core.TechnicalInformation.Type;
 
@@ -215,13 +214,48 @@ public class J48PartiallyConsolidated
 	/** for serialization */
 	private static final long serialVersionUID = 1279412716088899857L;
 
-	/** Options related to PCTBagging algorithm
-	 *  (Prefix PCTB added to the option names in order to appear together in the graphical interface)
-	 ********************************************************************************/
-	/** The consolidation percent. It indicates the number of inner nodes to leave as consolidated as a percent 
-	 * according to the inner nodes of the whole consolidated tree. It accepts values between 0 and 100.
-	 */
-	protected float m_PCTBconsolidationPercent = (float)20.0;
+	/** Ways to set the number of consolidated nodes to be developed */
+	public static final int NumberConsoNodes_Value = 1;
+	public static final int NumberConsoNodes_Percentage = 2;
+
+	/** Strings related to the ways to set the number of consolidated nodes to be developed */
+	public static final Tag[] TAGS_WAYS_TO_SET_NUMBER_CONSOLIDATED_NODES = {
+			new Tag(NumberConsoNodes_Value, "using a specific value"),
+			new Tag(NumberConsoNodes_Percentage, "based on a pertentage value (%)"),
+	};
+
+	/** Ways to set the priority criteria option */
+	public static final int PriorCrit_Original = 0;
+	public static final int PriorCrit_Levelbylevel = 1;
+	public static final int PriorCrit_Preorder = 2;
+	public static final int PriorCrit_Size = 3;
+	public static final int PriorCrit_GainratioWholeData = 4;
+	public static final int PriorCrit_GainratioSetSamples = 5;
+	public static final int PriorCrit_GainratioWholeData_Size = 6;
+	public static final int PriorCrit_GainratioSetSamples_Size = 7;
+
+	
+	/** Strings related to the ways to set the priority criteria option */
+	public static final Tag[] TAGS_WAYS_TO_SET_PRIORITY_CRITERIA = {
+			new Tag(PriorCrit_Original, "Original (recursive)"),
+			new Tag(PriorCrit_Levelbylevel, "Level by level"),
+			new Tag(PriorCrit_Preorder, "Node by node - Pre-order"),
+			new Tag(PriorCrit_Size, "Node by node - Size"),
+			new Tag(PriorCrit_GainratioWholeData, "Node by node - Gain ratio (Whole data)"),
+			new Tag(PriorCrit_GainratioSetSamples, "Node by node - Gain ratio (Set of samples)"),
+			new Tag(PriorCrit_GainratioWholeData_Size, "Node by node - Gain ratio (Whole data) * Size"),
+			new Tag(PriorCrit_GainratioSetSamples_Size, "Node by node - Gain ratio (Set of samples) * Size")
+	};
+	
+	/** Ways to set the heuristic search algorithm */
+	public static final int SearchAlg_BestFirst = 0;
+	public static final int SearchAlg_HillClimbing = 1;
+	
+	/** Strings related to the ways to set the heuristic search algorithm */
+	public static final Tag[] TAGS_WAYS_TO_SET_SEARCH_ALGORITHM = {
+			new Tag(SearchAlg_BestFirst, "Best-first (Original)"),
+			new Tag(SearchAlg_HillClimbing, "Hill climbing (In-depth)")
+	};
 	
 	/** Options to visualize the set of base trees */
 	public static final int Visualize_None = 1;
@@ -235,16 +269,73 @@ public class J48PartiallyConsolidated
 		new Tag(Visualize_All, "All")
 	};
 	
+	/** Options related to PCTBagging algorithm
+	 *  (Prefix PCTB added to the option names in order to appear together in the graphical interface)
+	 ********************************************************************************/
+
+	/** The consolidation percent (if PCTBnumberConsoNodesHowToSet = "based on a pertentage value (%)").
+	 * It indicates the number of inner nodes to leave as consolidated as a percent 
+	 * according to the inner nodes of the whole consolidated tree. It accepts values between 0.0 and 100.0.
+	 * if PCTBnumberConsoNodesHowToSet = "using a specific value", it directly indicates the number of 
+	 * internal nodes to be developed in the construction of the consolidated tree.
+	 */
+	protected float m_PCTBconsolidationPercent = (float)20.0;
+
+	/** Selected way to set the number of nodes to be developed from the partial consolidated tree;
+	 * based on a percentage value (e.g. 20%) with regard to the number of nodes in the whole 
+	 * consolidated tree (this implies to build the whole consolidated tree first) or
+	 * by using a concrete value (e.g. 5 nodes).
+	 */
+	private int m_PCTBnumberConsoNodesHowToSet = NumberConsoNodes_Percentage;
+	
+	/** Indicates the criteria used when choosing the next node to be developed in the construction 
+	 * of the partial consolidated tree: Size, Pre-order, Gain ratio...
+	 * The default value is the size of the nodes (number of instances they contain). 
+	 */
+	private int m_PCTBpriorityCriteria = PriorCrit_Size;
+	
+	/** Indicates the heuristic search algorithm used to determine the order in which the partial 
+	 * consolidated tree will be developed based on the priority criteria.
+	 * If the priority criterion is based on a quantitative value (such as size or gain ratio),
+	 * the best-first search algorithm will choose the best of the remaining nodes to be developed.
+	 * However, if the algorithm is Hill climbing, the next node to be developed will always be
+	 * one of the child nodes of the last developed node, i.e. it will give priority to developing
+	 * the tree in depth.
+	 */
+	private int m_PCTBheuristicSearchAlgorithm = SearchAlg_HillClimbing;
+	
+	/** Unpruned partial Consolidated Tree (CT)?
+	 * Thus the original ‘unpruned’ parameter (from J48) takes effect on the base trees of the Bagging
+	 * after the construction of the partial consolidated tree.
+	 * Thus the user can decide to prune (or not) the partial consolidated tree (with this parameter)
+	 * and, independently, decide to prune (or not) the trees associated with the Bagging after the 
+	 * construction of the partial consolidated tree (with the original parameter).
+	 */
+	private boolean m_PCTBunprunedCT = true;
+	
+	/** Collapse partial Consolidated Tree (CT)?
+	 * Thus the original ‘collapseTree’ parameter (from J48) takes effect on the base trees of the Bagging
+	 * after the construction of the partial consolidated tree.
+	 * Thus the user can decide to collapse (or not) the partial consolidated tree (with this parameter)
+	 * and, independently, decide to collapse (or not) the trees associated with the Bagging after the 
+	 * construction of the partial consolidated tree (with the original parameter).
+	 */
+	private boolean m_PCTBcollapseCT = false;
+
+	/** Whether to prune the base trees without preserving the structure of the partially
+	 * consolidated tree.
+	 * In the original PCTBagging, the pruning of the Bagging base trees (if active) is 
+	 * guaranteed never to exceed the structure of the partial consolidated tree. 
+	 * This parameter, if true, allows to freely prune each of these trees.
+	 */
+	protected boolean m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure = false;
+
 	/** Visualize the base trees: None, only the first ten (if they exist) or all */
 	protected int m_PCTBvisualizeBaseTrees = Visualize_FirstOnes;
 
 	/** Whether to show the explanation aggregated measures of the all decision trees
 	 *  that compose the final classifier (MCS). */
 	protected boolean m_PCTBprintExplanationMeasuresBaseTrees = false;
-
-	/** Whether to prune the base trees without preserving the structure of the partially
-	 * consolidated tree. */
-	protected boolean m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure = false;
 
 	/** Array for storing the generated base classifiers.
 	 * (based on Bagging.java written by Eibe Frank eta al)
@@ -480,24 +571,57 @@ public class J48PartiallyConsolidated
 	 * 
 	 * Options to leave partially consolidated the built consolidated tree (PCTB)
 	 * ============================================================================ 
-	 * -PCTB-C consolidation percent <br>
+	 * <pre>-PCTB-C consolidation percent <br>
 	 * Determines the number of inner nodes to leave as consolidated as a percent 
-	 * according to the inner nodes of the whole consolidated tree.  
-	 * (Default: 20.0)<p>
+	 * according to the inner nodes of the whole consolidated tree (If -PCTB-BP appears(by default).
+	 * If -PCTB-BP does not appear, it directly determines the number of internal nodes to be developed
+	 * as a specific value.    
+	 * (Default: 20.0)<pre>
+	 *
+	 * <pre>-PCTB-BP<br>
+	 * Set the way to set the number of inner nodes to be developed from the partial 
+	 * consolidated tree based on a percentage value with regard to the number of nodes 
+	 * in the whole consolidated tree (instead of using a concrete value).
+	 * (Default: true)<pre>
 	 * 
-	 * <pre> -PCTB-V mode <br>
+	 * <pre>-PCTB-PC criteria<br>
+	 * Indicates the criteria used when choosing the next node to be developed in the construction
+	 * of the partial consolidated tree:
+	 *  · 0: Original (recursive)
+	 *  · 1: Level by level
+	 *  · 2: Node by node - Pre-order
+	 *  · 3: Node by node - Size
+	 *  · 4: Node by node - Gain ratio (Whole data)
+	 *  · 5: Node by node - Gain ratio (Set of samples)
+	 *  · 6: Node by node - Gain ratio (Whole data) x Size
+	 *  · 7: Node by node - Gain ratio (Set of samples) x Size
+	 * (Default: Size)<pre>
+	 * 
+	 * <pre>-PCTB-HC<br>
+	 * Build the partial tree ordered by a criteria using Hill Climbing (instead of Best-first).
+	 * (Default: true)<pre>
+	 *
+	 * <pre>-PCTB-CU <br>
+	 * Use unpruned partial Consolidated Tree (CT).
+	 * (Default: true)<pre>
+	 * 
+	 * <pre>-PCTB-CC <br>
+	 * Collapse the partial Consolidated Tree (CT).
+	 * (Default: true)<pre>
+	 * 
+	 * <pre>-PCTB-WP<br>
+	 * Determines whether to prune the base trees without preserving the structure of
+	 * the partially consolidated tree (or not). 
+	 * (Default: false)<pre>
+	 * 
+	 * <pre>-PCTB-V mode
 	 * Determines how many base trees will be shown:
 	 *  None, only the first ten (if they exist) or all.  
 	 * (Default: only the first ten)<pre>
 	 * 
-	 * <pre> -PCTB-P<br>
+	 * <pre>-PCTB-P<br>
 	 * Determines whether to show the explanation aggregated measures of the all decision trees
 	 *  that compose the final classifier (MCS).  
-	 * (Default: false)<pre>
-	 * 
-	 * <pre> -PCTB-WP<br>
-	 * Determines whether to prune the base trees without preserving the structure of
-	 * the partially consolidated tree. 
 	 * (Default: false)<pre>
 	 * 
 	 * @return an enumeration of all the available options.
@@ -518,30 +642,52 @@ public class J48PartiallyConsolidated
 		newVector.
 		addElement(new Option(
 				"\tDetermines the number of inner nodes to leave as consolidated as a percent\n" +
-				"\taccording to the inner nodes of the whole consolidated tree.\n" +
+				"\taccording to the inner nodes of the whole consolidated tree (If -PCTB-BP appears(by default).\n" +
+				"\tIf -PCTB-BP does not appear, it directly determines the number of internal nodes to be developed\n" +
+				"\tas a specific value.\n" +
 				"\t(default 20.0)",
-				"PCTB-C", 1, "-PCTB-C <consolidation percent>"));
-
+				"PCTB-C", 1, "-PCTB-C <consolidation percent (or a specific value)>"));
 		newVector.
 		addElement(new Option(
-				"\tDetermines how many base trees will be shown:\n" +
-				"\tNone, only the first ten (if they exist) or all.\n" +
-				"\t(default: only the first ten)",
-				"PCTB-V", 1, "-PCTB-V <mode>"));
-
-	    newVector.
-	    addElement(new Option(
-	            "\tDetermines whether to show the explanation aggregated measures of the all base trees" +
-	            "\tthat compose the final classifier (MCS).\n" + 
-	            "\t(default false)",
-	            "PCTB-P", 0, "-PCTB-P"));
-
+				"\tSet the way to set the number of inner nodes to be developed from the partial consolidated tree based on a percentage value\n" +
+				"\twith regard to the number of nodes in the whole consolidated tree (instead of using a concrete value)\n",
+				"PCTB-BP", 0, "-PCTB-BP"));
+		newVector.
+		addElement(new Option(
+				"\tIndicates the criteria used when choosing the next node to be developed in the construction\n" +
+				"\tof the partial consolidated tree:\n" +
+				"\t * 0: Original (recursive)\n" +
+				"\t * 1: Level by level\n" +
+				"\t * 2: Node by node - Pre-order\n" +
+				"\t * 3: Node by node - Size\n" +
+				"\t * 4: Node by node - Gain ratio (Whole data)\n" +
+				"\t * 5: Node by node - Gain ratio (Set of samples)\n" +
+				"\t * 6: Node by node - Gain ratio (Whole data) x Size\n" +
+				"\t * 7: Node by node - Gain ratio (Set of samples) x Size\n" +
+				"\t(default Size)",
+				"PCTB-PC", 1, "-PCTB-PC <criteria>"));
+		newVector.addElement(new Option("\tSet the heuristic search algorithm to be used with the priority criteria to build the tree as Hill Climbing\n" +
+				"\t, instead of Best-first (original).", "PCTB-HC", 0, "-PCTB-HC"));
+	    newVector.addElement(new Option("\tUse unpruned partial Consolidated Tree.", "PCTB-CU", 0, "-PCTB-CU"));
+	    newVector.addElement(new Option("\tCollpase the partial Consolidated Tree.", "PCTB-CC", 0, "-PCTB-CC"));
 	    newVector.
 	    addElement(new Option(
 	            "\tDetermines whether to prune the base trees without preserving the structure " +
 	            "\tthe partially consolidated tree.\n" + 
 	            "\t(default false)",
 	            "PCTB-WP", 0, "-PCTB-WP"));
+		newVector.
+		addElement(new Option(
+				"\tDetermines how many base trees will be shown:\n" +
+				"\tNone, only the first ten (if they exist) or all.\n" +
+				"\t(default: only the first ten)",
+				"PCTB-V", 1, "-PCTB-V <mode>"));
+	    newVector.
+	    addElement(new Option(
+	            "\tDetermines whether to show the explanation aggregated measures of the all base trees" +
+	            "\tthat compose the final classifier (MCS).\n" + 
+	            "\t(default false)",
+	            "PCTB-P", 0, "-PCTB-P"));
 
 	    return newVector.elements();
 	}
@@ -590,24 +736,57 @@ public class J48PartiallyConsolidated
 	 * 
 	 * Options to leave partially consolidated the built consolidated tree (PCTB)
 	 * ============================================================================ 
-	 * <pre> -PCTB-C consolidation percent
+	 * <pre>-PCTB-C consolidation percent <br>
 	 * Determines the number of inner nodes to leave as consolidated as a percent 
-	 * according to the inner nodes of the whole consolidated tree.  
-	 * (Default: 20.0)</pre>
+	 * according to the inner nodes of the whole consolidated tree (If -PCTB-BP appears(by default).
+	 * If -PCTB-BP does not appear, it directly determines the number of internal nodes to be developed
+	 * as a specific value.    
+	 * (Default: 20.0)<pre>
+	 *
+	 * <pre>-PCTB-BP<br>
+	 * Set the way to set the number of inner nodes to be developed from the partial 
+	 * consolidated tree based on a percentage value with regard to the number of nodes 
+	 * in the whole consolidated tree (instead of using a concrete value).
+	 * (Default: true)<pre>
 	 * 
-	 * <pre> -PCTB-V mode <br>
+	 * <pre>-PCTB-PC criteria<br>
+	 * Indicates the criteria used when choosing the next node to be developed in the construction
+	 * of the partial consolidated tree:
+	 *  · 0: Original (recursive)
+	 *  · 1: Level by level
+	 *  · 2: Node by node - Pre-order
+	 *  · 3: Node by node - Size
+	 *  · 4: Node by node - Gain ratio (Whole data)
+	 *  · 5: Node by node - Gain ratio (Set of samples)
+	 *  · 6: Node by node - Gain ratio (Whole data) x Size
+	 *  · 7: Node by node - Gain ratio (Set of samples) x Size
+	 * (Default: Size)<pre>
+	 * 
+	 * <pre>-PCTB-HC<br>
+	 * Build the partial tree ordered by a criteria using Hill Climbing (instead of Best-first).
+	 * (Default: true)<pre>
+	 *
+	 * <pre>-PCTB-CU <br>
+	 * Use unpruned partial Consolidated Tree (CT).
+	 * (Default: true)<pre>
+	 * 
+	 * <pre>-PCTB-CC <br>
+	 * Collapse the partial Consolidated Tree (CT).
+	 * (Default: true)<pre>
+	 * 
+	 * <pre>-PCTB-WP<br>
+	 * Determines whether to prune the base trees without preserving the structure of
+	 * the partially consolidated tree (or not). 
+	 * (Default: false)<pre>
+	 * 
+	 * <pre>-PCTB-V mode
 	 * Determines how many base trees will be shown:
 	 *  None, only the first ten (if they exist) or all.  
 	 * (Default: only the first ten)<pre>
 	 * 
-	 * <pre> -PCTB-P<br>
+	 * <pre>-PCTB-P<br>
 	 * Determines whether to show the explanation aggregated measures of the all decision trees
 	 *  that compose the final classifier (MCS).  
-	 * (Default: false)<pre>
-	 * 
-	 * <pre> -PCTB-WP<br>
-	 * Determines whether to prune the base trees without preserving the structure of
-	 * the partially consolidated tree. 
 	 * (Default: false)<pre>
 	 * 
    <!-- options-end -->
@@ -627,15 +806,32 @@ public class J48PartiallyConsolidated
 			setPCTBconsolidationPercent(Float.valueOf(PCTBconsolidationPercentString));
 		else
 			setPCTBconsolidationPercent((float)20.0);
+
+		setPCTBconsolidationPercentHowToSet(
+	    	new SelectedTag(Utils.getFlag("PCTB-BP", options) ? NumberConsoNodes_Percentage : NumberConsoNodes_Value, TAGS_WAYS_TO_SET_NUMBER_CONSOLIDATED_NODES));
+
+		String PCTBpriorityCriteriaString = Utils.getOption("PCTB-PC", options);
+		if (PCTBpriorityCriteriaString.length() != 0)
+			setPCTBpriorityCriteria(new SelectedTag(Integer.parseInt(PCTBpriorityCriteriaString), TAGS_WAYS_TO_SET_PRIORITY_CRITERIA));
+		else
+			setPCTBpriorityCriteria(new SelectedTag(PriorCrit_Size, TAGS_WAYS_TO_SET_PRIORITY_CRITERIA)); // default: Size
+
+		setPCTBheuristicSearchAlgorithm(
+		    	new SelectedTag(Utils.getFlag("PCTB-HC", options) ? SearchAlg_HillClimbing : SearchAlg_BestFirst, TAGS_WAYS_TO_SET_SEARCH_ALGORITHM));
+
+		setPCTBunprunedCT(Utils.getFlag("PCTB-CU", options));
+
+		setPCTBcollapseCT(Utils.getFlag("PCTB-CC", options));
+
+		setPCTBpruneBaseTreesWithoutPreservingConsolidatedStructure(Utils.getFlag("PCTB-WP", options));
+
 		String PCTBvisualizeBaseTreesString = Utils.getOption("PCTB-V", options);
 		if (PCTBvisualizeBaseTreesString.length() != 0)
 			setPCTBvisualizeBaseTrees(new SelectedTag(Integer.parseInt(PCTBvisualizeBaseTreesString), TAGS_VISUALIZE_BASE_TREES));
 		else
 			setPCTBvisualizeBaseTrees(new SelectedTag(Visualize_FirstOnes, TAGS_VISUALIZE_BASE_TREES)); // default: only the first ten
-		
-	    setPCTBprintExplanationMeasuresBaseTrees(Utils.getFlag("PCTB-P", options));
 
-	    setPCTBpruneBaseTreesWithoutPreservingConsolidatedStructure(Utils.getFlag("PCTB-WP", options));
+		setPCTBprintExplanationMeasuresBaseTrees(Utils.getFlag("PCTB-P", options));
 
 	    // J48 and J48Consolidated options
 		// ===============================
@@ -662,14 +858,31 @@ public class J48PartiallyConsolidated
 		result.add("-PCTB-C");
 		result.add("" + m_PCTBconsolidationPercent);
 
+		if (m_PCTBnumberConsoNodesHowToSet == NumberConsoNodes_Percentage)
+			result.add("-PCTB-BP");
+
+		result.add("-PCTB-PC");
+		result.add("" + m_PCTBpriorityCriteria);
+		
+		if (m_PCTBheuristicSearchAlgorithm == SearchAlg_HillClimbing)
+			result.add("-PCTB-HC");
+
+		if (m_PCTBunprunedCT) {
+			result.add("-PCTB-CU");
+		}
+
+		if (m_PCTBcollapseCT) {
+			result.add("-PCTB-CC");
+		}
+
+		if (m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure)
+			result.add("-PCTB-WP");
+
 		result.add("-PCTB-V");
 		result.add("" + m_PCTBvisualizeBaseTrees);
 
 		if (m_PCTBprintExplanationMeasuresBaseTrees)
 			result.add("-PCTB-P");
-
-		if (m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure)
-			result.add("-PCTB-WP");
 
 		return (String[]) result.toArray(new String[result.size()]);	  
 	}
@@ -913,13 +1126,14 @@ public class J48PartiallyConsolidated
 	 * displaying in the explorer/experimenter gui
 	 */
 	public String PCTBconsolidationPercentTipText() {
-		return "Consolidation percent for use after the consolidation process";
+		return "Consolidation percent (or number of inner nodes) that determines the number of nodes of the consolidated tree to be developed.";
 	}
 
 	/**
-	 * Get the value of ConsolidationPercent.
+	 * Get the value of ConsolidationPercent (if PCTBnumberConsoNodesHowToSet = "based on a pertentage value (%)") or
+	 * directly the number of internal nodes (if PCTBnumberConsoNodesHowToSet = "using a specific value")
 	 *
-	 * @return Value of ConsolidationPercent.
+	 * @return Value of ConsolidationPercent or number of nodes.
 	 */
 	public float getPCTBconsolidationPercent() {
 
@@ -927,15 +1141,17 @@ public class J48PartiallyConsolidated
 	}
 
 	/**
-	 * Set the value of ConsolidationPercetnt.
+	 * Set the value of Consolidation Percent or directly the number of internal nodes
 	 *
-	 * @param v Value to assign to ConsolidationPercent.
+	 * @param v Value to assign to ConsolidationPercent or number of nodes.
 	 * @throws Exception if an option is not supported
 	 */
 	public void setPCTBconsolidationPercent(float v) throws Exception {
-		if ((v < 0) || (v > 100))
-			throw new Exception("The consolidation percent (%) has to be a value greater than or equal to zero and smaller " +
-					"than or equal to 100!");
+		if (m_PCTBnumberConsoNodesHowToSet ==  NumberConsoNodes_Percentage) {
+			if ((v < 0) || (v > 100))
+				throw new Exception("The consolidation percent (%) has to be a value greater than or equal to zero and smaller " +
+						"than or equal to 100!");
+		}
 		m_PCTBconsolidationPercent = v;
 	}
 
@@ -944,8 +1160,229 @@ public class J48PartiallyConsolidated
 	 * @return tip text for this property suitable for
 	 * displaying in the explorer/experimenter gui
 	 */
+	public String PCTBnumberConsoNodesHowToSetTipText() {
+		return "Way to set the number of nodes to be developed from the partial consolidated tree:\n" +
+				" * using a fixed value which directly indicates the number nodes to consolidate or\n" +
+				" * based on a value as a percentage with regard to the number of nodes in the whole\n" +
+				"   consolidated tree.\n";
+	}
+	
+	/**
+	 * Get the value of PCTBnumberConsoNodesHowToSet.
+	 *
+	 * @return Value of PCTBnumberConsoNodesHowToSet.
+	 */
+	public SelectedTag getPCTBnumberConsoNodesHowToSet() {
+		return new SelectedTag(m_PCTBnumberConsoNodesHowToSet,
+				TAGS_WAYS_TO_SET_PRIORITY_CRITERIA);
+	}
+	
+	/**
+	 * Set the value of PCTBnumberConsoNodesHowToSet. Values other than
+	 * NumberConsoNodes_Percentage, or NumberConsoNodes_Value will be ignored.
+	 *
+	 * @param newWayToSetNumberSamples the way to set the number of samples to use
+	 * @throws Exception if an option is not supported
+	 */
+	public void setPCTBconsolidationPercentHowToSet(SelectedTag newWayToSetnumberConsoNodes) throws Exception {
+		if (newWayToSetnumberConsoNodes.getTags() == TAGS_WAYS_TO_SET_NUMBER_CONSOLIDATED_NODES) 
+		{
+			int newEvWay = newWayToSetnumberConsoNodes.getSelectedTag().getID();
+
+			if (newEvWay == NumberConsoNodes_Value || newEvWay == NumberConsoNodes_Percentage)
+				m_PCTBnumberConsoNodesHowToSet = newEvWay;
+			else 
+				throw new IllegalArgumentException("Wrong selection type, value should be: "
+						+ "between 1 and 2");
+		}
+	}
+
+	/**
+	 * Returns the tip text for this property
+	 * 
+	 * @return tip text for this property suitable for displaying in the
+	 *         explorer/experimenter gui
+	 */
+	public String PCTBpriorityCriteriaTipText() {
+		return "Build the partial consolidated tree driven by a criteria:\n" +
+				" ·Original (recursive)\n" +
+				" ·Level by level\n" +
+				" ·Node by node: Pre-order\n" +
+				" ·Node by node: Size\n" +
+				" ·Node by node: Gain ratio (Whole data)\n" + 
+				" ·Node by node: Gain ratio (Set of samples)\n" + 
+				" ·Node by node: Gain ratio (Whole data) x Size\n" +
+				" ·Node by node: Gain ratio (Set of samples) x Size\n";
+	}
+
+	/**
+	 * Get the value of PCTBpriorityCriteria.
+	 * 
+	 * @return Value of PCTBpriorityCriteria.
+	 */
+	public SelectedTag getITPCTpriorityCriteria() {
+		return new SelectedTag(m_PCTBpriorityCriteria,
+				TAGS_WAYS_TO_SET_PRIORITY_CRITERIA);
+	}
+
+	/**
+	 * Set the value of PCTBpriorityCriteria.
+	 * 
+	 * @param v Value to assign to PCTBpriorityCriteria.
+	 */
+
+	public void setPCTBpriorityCriteria(SelectedTag newPriorityCriteria) throws Exception {
+		if (newPriorityCriteria.getTags() == TAGS_WAYS_TO_SET_PRIORITY_CRITERIA) 
+		{
+			int newPriority = newPriorityCriteria.getSelectedTag().getID();
+
+			if (newPriority == PriorCrit_Original || newPriority == PriorCrit_Levelbylevel || newPriority == PriorCrit_Preorder || newPriority == PriorCrit_Size || 
+				newPriority == PriorCrit_GainratioWholeData || newPriority == PriorCrit_GainratioWholeData_Size ||
+				newPriority == PriorCrit_GainratioSetSamples || newPriority == PriorCrit_GainratioSetSamples_Size)
+				m_PCTBpriorityCriteria = newPriority;
+			else 
+				throw new IllegalArgumentException("Wrong selection type, value should be: "
+						+ "between 0 and 7");
+		}
+	}
+	
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String PCTBheuristicSearchAlgorithmTipText() {
+		return "Way to set the heuristic search algorithm to be used with the priority criteria to build the partial consolidated tree:\n" +
+				" * Best-first (Original)\n" +
+				" * Hill Climbing (In-depth)\n";
+	}
+	
+	/**
+	 * Get the value of PCTBheuristicSearchAlgorithm.
+	 *
+	 * @return Value of PCTBheuristicSearchAlgorithm.
+	 */
+	public SelectedTag getPCTBheuristicSearchAlgorithm() {
+		return new SelectedTag(m_PCTBheuristicSearchAlgorithm,
+				TAGS_WAYS_TO_SET_SEARCH_ALGORITHM);
+	}
+
+	/**
+	 * Set the value of PCTBheuristicSearchAlgorithm. Values other than
+	 * BestFirst, or HillClimbing will be ignored.
+	 *
+	 * @param newWayToSetSearchAlgorithm the way to set the heuristic search algorithm to use
+	 * @throws Exception if an option is not supported
+	 */
+	public void setPCTBheuristicSearchAlgorithm(SelectedTag newWayToSetSearchAlgorithm) throws Exception {
+		if (newWayToSetSearchAlgorithm.getTags() == TAGS_WAYS_TO_SET_SEARCH_ALGORITHM) 
+		{
+			int newEvWay = newWayToSetSearchAlgorithm.getSelectedTag().getID();
+
+			if (newEvWay == SearchAlg_BestFirst || newEvWay == SearchAlg_HillClimbing)
+				m_PCTBheuristicSearchAlgorithm = newEvWay;
+			else 
+				throw new IllegalArgumentException("Wrong selection type, value should be: "
+						+ "BestFirst(0) or HillClimbing(1)");
+		}
+	}
+	
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String PCTBunprunedCTTipText() {
+		return "whether to prune or not the partial Consolidated Tree (CT).";
+	}
+	
+	/**
+	 * Set whether to prune or not the partial Consolidated Tree (CT). 
+	 *
+	 * @param unprunedCT whether to prune or not the partial Consolidated Tree (CT).
+	 */
+	public void setPCTBunprunedCT(boolean unprunedCT) {
+
+		m_PCTBunprunedCT = unprunedCT;
+	}
+
+	/**
+	 * Get whether to prune or not the partial Consolidated Tree (CT).
+	 *
+	 * @return whether to prune or not the partial Consolidated Tree (CT).
+	 */
+	public boolean getPCTBunprunedCT() {
+
+		return m_PCTBunprunedCT;
+	}
+
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String PCTBcollapseCTTipText() {
+		return "whether to collapse or not the partial Consolidated Tree (CT).";
+	}
+	
+	/**
+	 * Set whether to collapse or not the partial Consolidated Tree (CT). 
+	 *
+	 * @param unprunedCT whether to collapse or not the partial Consolidated Tree (CT).
+	 */
+	public void setPCTBcollapseCT(boolean collapseCT) {
+
+		m_PCTBcollapseCT = collapseCT;
+	}
+
+	/**
+	 * Get whether to collapse or not the partial Consolidated Tree (CT).
+	 *
+	 * @return whether to collapse or not the partial Consolidated Tree (CT).
+	 */
+	public boolean getPCTBcollapseCT() {
+
+		return m_PCTBcollapseCT;
+	}
+
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String PCTBpruneBaseTreesWithoutPreservingConsolidatedStructureTipText() {
+		return "Whether to prune the base trees without preserving the structure of the partially consolidated tree.";
+	}
+
+	/**
+	 * Set whether to prune the base trees without preserving the structure of the partially
+	 * consolidated tree. 
+	 *
+	 * @param notPreserving whether to prune without preserving the consolidated structure.
+	 */
+	public void setPCTBpruneBaseTreesWithoutPreservingConsolidatedStructure(boolean notPreserving) {
+
+		m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure = notPreserving;
+	}
+
+	/**
+	 * Get whether to prune the base trees without preserving the structure of the partially
+	 * consolidated tree.
+	 *
+	 * @return whether to prune without preserving the consolidated structure
+	 */
+	public boolean getPCTBpruneBaseTreesWithoutPreservingConsolidatedStructure() {
+
+		return m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure;
+	}
+
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
 	public String PCTBvisualizeBaseTreesTipText() {
-		return "Mode to visualize the set of base trees: None, only the first ten or all";
+		return "Mode to visualize the set of base trees that compose the final classifier (MCS): None, only the first ten or all";
 	}
 
 	/**
@@ -983,7 +1420,7 @@ public class J48PartiallyConsolidated
 	 * displaying in the explorer/experimenter gui
 	 */
 	public String PCTBprintExplanationMeasuresBaseTreesTipText() {
-		return "Whether to show the explanation aggregated measures of all base trees.";
+		return "Whether to show the explanation aggregated measures of all base trees that compose the final classifier (MCS).";
 	}
 	
 	/**
@@ -1004,37 +1441,6 @@ public class J48PartiallyConsolidated
 	public boolean getPCTBprintExplanationMeasuresBaseTrees() {
 
 		return m_PCTBprintExplanationMeasuresBaseTrees;
-	}
-
-	/**
-	 * Returns the tip text for this property
-	 * @return tip text for this property suitable for
-	 * displaying in the explorer/experimenter gui
-	 */
-	public String PCTBpruneBaseTreesWithoutPreservingConsolidatedStructureTipText() {
-		return "Whether to prune the base trees without preserving the structure of the partially consolidated tree.";
-	}
-
-	/**
-	 * Set whether to prune the base trees without preserving the structure of the partially
-	 * consolidated tree. 
-	 *
-	 * @param notPreserving whether to prune without preserving the consolidated structure.
-	 */
-	public void setPCTBpruneBaseTreesWithoutPreservingConsolidatedStructure(boolean notPreserving) {
-
-		m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure = notPreserving;
-	}
-
-	/**
-	 * Get whether to prune the base trees without preserving the structure of the partially
-	 * consolidated tree.
-	 *
-	 * @return whether to prune without preserving the consolidated structure
-	 */
-	public boolean getPCTBpruneBaseTreesWithoutPreservingConsolidatedStructure() {
-
-		return m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure;
 	}
 
 }
