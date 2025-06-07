@@ -901,19 +901,82 @@ public class J48PartiallyConsolidated
 			ch_line[i] = '-';
 		String line = String.valueOf(ch_line);
 		line += "\n";
-		st += "Consolidation percent = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%";
-		int numberNodesConso = ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getNumInternalNodesConso();
-		if (numberNodesConso >= 0)
-			st += " => Internal nodes: " + numberNodesConso;
+		st += "Priority criteria to grow the partial consolidated tree: ";
+		switch(m_PCTBpriorityCriteria) {
+			case PriorCrit_Original:
+				st += "Original (recursive)";break;
+			case PriorCrit_Levelbylevel:
+				st += "Level by level";break;
+			case PriorCrit_Preorder:
+				st += "Node by node - Preorder";break;
+			case PriorCrit_Size:
+				st += "Node by node - Size";break;
+			case PriorCrit_GainratioWholeData:
+				st += "Node by node - Gain ratio (Whole data)";break;
+			case PriorCrit_GainratioSetSamples:
+				st += "Node by node - Gain ratio (Set of samples)";break;
+			case PriorCrit_GainratioWholeData_Size:
+				st += "Node by node - Gain ratio (Whole data) weighted by Size";break;
+			case PriorCrit_GainratioSetSamples_Size:
+				st += "Node by node - Gain ratio (Set of samples) weighted by Size";break;
+		}
 		st += "\n";
+		if((m_PCTBpriorityCriteria >= PriorCrit_Size) && (m_PCTBpriorityCriteria <= PriorCrit_GainratioSetSamples_Size)) {
+			if(m_PCTBheuristicSearchAlgorithm == SearchAlg_HillClimbing)
+				st += " using Hill Climbing as heuristic search algorithm\n";
+			else
+				st += " using Best-first as heuristic search algorithm\n";
+		}
+		if (m_PCTBnumberConsoNodesHowToSet == NumberConsoNodes_Percentage) {
+			if (m_PCTBpriorityCriteria == PriorCrit_Levelbylevel) {
+				st += "Consolidation percent (in terms of number of levels of the tree) = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%";
+				if (m_root != null) {
+					int numberNodesConso = ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getNumInternalNodesConso();
+					if (numberNodesConso >= 0)
+						st += " => Number of levels to grow: " + numberNodesConso;
+				}
+			} else {
+				st += "Consolidation percent = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%";
+				if (m_root != null) {
+					int numberNodesConso = ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getNumInternalNodesConso();
+					if (numberNodesConso >= 0)
+						st += " => Internal nodes to grow: " + numberNodesConso;
+				}
+			}
+			st += "\n";
+		} else { // ConsolidationNumber_Value
+			if (m_PCTBpriorityCriteria == PriorCrit_Levelbylevel)
+				st += "Number of levels of the partial consolidated tree to grow = " + Utils.doubleToString(m_PCTBconsolidationPercent,0) + "\n";
+			else
+				st += "Number of inner nodes of the partial consolidated tree to grow = " + Utils.doubleToString(m_PCTBconsolidationPercent,0) + "\n";
+		}
 		if (m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure)
 			st += "·Without preserving the structure of the partially consolidated tree in the base trees\n";
 		else
 			st += "·Preserving the structure of the partially consolidated tree in the base trees\n";
 		st += line;
-		st += super.toString();
-		st += toStringVisualizeBaseTrees(line);
-		st += toStringPrintExplanationMeasuresMCS();
+		//st += super.toString();
+		if (m_root == null)
+			st += "No classifier built";
+		else {
+			st += "J48Consolidated " + (m_PCTBunprunedCT? "unpruned " : "") + (m_PCTBcollapseCT? "(collapsed) " : "") + "tree\n" + 
+					toStringResamplingMethod() + m_root.toString();
+			st += toStringVisualizeBaseTrees(line);
+			st += toStringPrintExplanationMeasuresMCS();
+			if(m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure) {
+				st += "\n---------------------------------------------------"
+					+ "\nMeasures to evaluate the effect of pruning base trees"
+					+ "\nwithout preserving the structure of the partial consolidated tree:"
+					+ "\nGiven, at each node of the partial consolidated tree, the percentage"
+					+ "\nof base trees containing the same split division [Str: dd.dd%], we obtain:"
+					+ "\n· Mean: " + Utils.roundDouble(measureAvgPercBaseTreesPreservingStructure(),2) + "%"
+					+ "\n· Minimum: " + Utils.roundDouble(measureMinPercBaseTreesPreservingStructure(),2) + "%"
+					+ "\n· Maximum: " + Utils.roundDouble(measureMaxPercBaseTreesPreservingStructure(),2) + "%"
+					+ "\n· Median: " + Utils.roundDouble(measureMdnPercBaseTreesPreservingStructure(),2) + "%"
+					+ "\n· Std.Dev.: " + Utils.roundDouble(measureDevPercBaseTreesPreservingStructure(),2) + "%"
+					+ "\n---------------------------------------------------";
+			}
+		}
 		return st;
 	}
 
