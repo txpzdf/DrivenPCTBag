@@ -36,6 +36,7 @@ import weka.classifiers.trees.j48.C45ModelSelection;
 import weka.classifiers.trees.j48.ClassifierTree;
 import weka.classifiers.trees.j48.ModelSelection;
 import weka.classifiers.trees.j48Consolidated.C45ConsolidatedModelSelection;
+import weka.classifiers.trees.j48ItPartiallyConsolidated.C45ItPartiallyConsolidatedPruneableClassifierTree;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45ModelSelectionExtended;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45PartiallyConsolidatedPruneableClassifierTree;
 import weka.core.AdditionalMeasureProducer;
@@ -419,6 +420,7 @@ public class J48PartiallyConsolidated
 		C45ModelSelectionExtended baseModelToForceDecision = new C45ModelSelectionExtended(m_minNumObj, instances, 
 				m_useMDLcorrection, m_doNotMakeSplitPointActualValue);
 		// TODO Implement the option reducedErrorPruning of J48
+		
 		C45PartiallyConsolidatedPruneableClassifierTree localClassifier =
 				new C45PartiallyConsolidatedPruneableClassifierTree(modSelection, baseModelToForceDecision,
 						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length,
@@ -916,9 +918,9 @@ public class J48PartiallyConsolidated
 			case PriorCrit_GainratioSetSamples:
 				st += "Node by node - Gain ratio (Set of samples)";break;
 			case PriorCrit_GainratioWholeData_Size:
-				st += "Node by node - Gain ratio (Whole data) weighted by Size";break;
+				st += "Node by node - Gain ratio (Whole data) weighted * Size";break;
 			case PriorCrit_GainratioSetSamples_Size:
-				st += "Node by node - Gain ratio (Set of samples) weighted by Size";break;
+				st += "Node by node - Gain ratio (Set of samples) weighted * Size";break;
 		}
 		st += "\n";
 		if((m_PCTBpriorityCriteria >= PriorCrit_Size) && (m_PCTBpriorityCriteria <= PriorCrit_GainratioSetSamples_Size)) {
@@ -1098,6 +1100,81 @@ public class J48PartiallyConsolidated
 	}
 	
 	/**
+	 * Returns the time taken to build the whole Consolidated Tree (CT),
+	 * including pruning/collapsing, if required.
+	 * 
+	 * @return elapsed time
+	 */
+	public double measureElapsedTimeTrainingWholeCT() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingWholeCT();
+	}
+	
+	/**
+	 * Returns the time taken to build the partial Consolidated Tree (CT),
+	 * including pruning/collapsing, if required.
+	 * 
+	 * @return elapsed time
+	 */
+	public double measureElapsedTimeTrainingPartialCT() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingPartialCT();
+	}
+
+	/**
+	 * Returns the time taken to build all base trees that compose the final multiple classifier (Bagging),
+	 * including pruning/collapsing, if required.
+	 * 
+	 * @return elapsed time
+	 */
+	public double measureElapsedTimeTrainingAssocBagging() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingAssocBagging();
+	}
+
+	/**
+	 * Returns the average percentage of base trees preserving structure throughout the tree
+	 * 
+	 * @return average percentage
+	 */
+	public double measureAvgPercBaseTreesPreservingStructure() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getAvgPercBaseTreesPreservingStructure();
+	}
+
+	/**
+	 * Returns the minimum percentage of base trees preserving structure throughout the tree
+	 * 
+	 * @return minimum percentage
+	 */
+	public double measureMinPercBaseTreesPreservingStructure() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getMinPercBaseTreesPreservingStructure();
+	}
+
+	/**
+	 * Returns the maximum percentage of base trees preserving structure throughout the tree
+	 * 
+	 * @return maximum percentage
+	 */
+	public double measureMaxPercBaseTreesPreservingStructure() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getMaxPercBaseTreesPreservingStructure();
+	}
+
+	/**
+	 * Returns the median percentage of base trees preserving structure throughout the tree
+	 * 
+	 * @return median percentage
+	 */
+	public double measureMdnPercBaseTreesPreservingStructure() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getMdnPercBaseTreesPreservingStructure();
+	}
+
+	/**
+	 * Returns the standard deviation percentage of base trees preserving structure throughout the tree
+	 * 
+	 * @return std deviation percentage
+	 */
+	public double measureDevPercBaseTreesPreservingStructure() {
+		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getDevPercBaseTreesPreservingStructure();
+	}
+
+	/**
 	 * Returns an enumeration of the additional measure names
 	 * (Added also those produced by the base algorithm).
 	 * 
@@ -1115,6 +1192,15 @@ public class J48PartiallyConsolidated
 		for(String op: metaOperations)
 			for(String ms: treeMeasures)
 				newVector.addElement("measure" + op + ms);
+
+		newVector.addElement("measureElapsedTimeTrainingWholeCT");
+		newVector.addElement("measureElapsedTimeTrainingPartialCT");
+		newVector.addElement("measureElapsedTimeTrainingAssocBagging");
+		newVector.addElement("measureAvgPercBaseTreesPreservingStructure");
+		newVector.addElement("measureMinPercBaseTreesPreservingStructure");
+		newVector.addElement("measureMaxPercBaseTreesPreservingStructure");
+		newVector.addElement("measureMdnPercBaseTreesPreservingStructure");
+		newVector.addElement("measureDevPercBaseTreesPreservingStructure");
 
 		return newVector.elements();
 	}
@@ -1178,7 +1264,25 @@ public class J48PartiallyConsolidated
 						return getMetaAggregateMeasure(sms, iop);
 					}
 				}
-			throw new IllegalArgumentException(additionalMeasureName 
+			
+			if (additionalMeasureName.compareToIgnoreCase("measureElapsedTimeTrainingWholeCT") == 0) {
+				return measureElapsedTimeTrainingWholeCT();
+			} else if (additionalMeasureName.compareToIgnoreCase("measureElapsedTimeTrainingPartialCT") == 0) {
+				return measureElapsedTimeTrainingPartialCT();
+			} else if (additionalMeasureName.compareToIgnoreCase("measureElapsedTimeTrainingAssocBagging") == 0) {
+				return measureElapsedTimeTrainingAssocBagging();
+			} else if (additionalMeasureName.compareToIgnoreCase("measureAvgPercBaseTreesPreservingStructure") == 0) {
+				return measureAvgPercBaseTreesPreservingStructure();
+			} else if (additionalMeasureName.compareToIgnoreCase("measureMinPercBaseTreesPreservingStructure") == 0) {
+				return measureMinPercBaseTreesPreservingStructure();
+			} else if (additionalMeasureName.compareToIgnoreCase("measureMaxPercBaseTreesPreservingStructure") == 0) {
+				return measureMaxPercBaseTreesPreservingStructure();
+			} else if (additionalMeasureName.compareToIgnoreCase("measureMdnPercBaseTreesPreservingStructure") == 0) {
+				return measureMdnPercBaseTreesPreservingStructure();
+			} else if (additionalMeasureName.compareToIgnoreCase("measureDevPercBaseTreesPreservingStructure") == 0) {
+				return measureDevPercBaseTreesPreservingStructure();
+			} else
+				throw new IllegalArgumentException(additionalMeasureName 
 					+ " not supported (J48PartiallyConsolidated)");
 		}
 	}
