@@ -36,7 +36,7 @@ import weka.classifiers.trees.j48.C45ModelSelection;
 import weka.classifiers.trees.j48.ClassifierTree;
 import weka.classifiers.trees.j48.ModelSelection;
 import weka.classifiers.trees.j48Consolidated.C45ConsolidatedModelSelection;
-import weka.classifiers.trees.j48ItPartiallyConsolidated.C45ItPartiallyConsolidatedPruneableClassifierTree;
+import weka.classifiers.trees.j48PartiallyConsolidated.C45ItPartiallyConsolidatedPruneableClassifierTree;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45ModelSelectionExtended;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45PartiallyConsolidatedPruneableClassifierTree;
 import weka.core.AdditionalMeasureProducer;
@@ -287,7 +287,7 @@ public class J48PartiallyConsolidated
 	 * consolidated tree (this implies to build the whole consolidated tree first) or
 	 * by using a concrete value (e.g. 5 nodes).
 	 */
-	private int m_PCTBnumberConsoNodesHowToSet = NumberConsoNodes_Percentage;
+	private int m_PCTBconsolidationPercentHowToSet = NumberConsoNodes_Percentage;
 	
 	/** Indicates the criteria used when choosing the next node to be developed in the construction 
 	 * of the partial consolidated tree: Size, Pre-order, Gain ratio...
@@ -420,12 +420,31 @@ public class J48PartiallyConsolidated
 		C45ModelSelectionExtended baseModelToForceDecision = new C45ModelSelectionExtended(m_minNumObj, instances, 
 				m_useMDLcorrection, m_doNotMakeSplitPointActualValue);
 		// TODO Implement the option reducedErrorPruning of J48
-		
-		C45PartiallyConsolidatedPruneableClassifierTree localClassifier =
-				new C45PartiallyConsolidatedPruneableClassifierTree(modSelection, baseModelToForceDecision,
+		C45PartiallyConsolidatedPruneableClassifierTree localClassifier;
+		switch (m_PCTBpriorityCriteria) {
+			case PriorCrit_Original:
+				if (m_unpruned != m_PCTBunprunedCT)
+					throw new Exception("If priority criteria is equal to 'Original', no distinction can be made between unpruned and unprunedCT; they must have the same value!");
+				if (m_collapseTree != m_PCTBcollapseCT)
+					throw new Exception("If priority criteria is equal to 'Original', no distinction can be made between collapseTree and collapseCT; they must have the same value!");
+				if (m_PCTBheuristicSearchAlgorithm == SearchAlg_HillClimbing)
+					throw new Exception("The ‘Hill climbing’ option for heuristicSearchAlgorithm was not implemented, when priority criteria is equal to Original!");
+				if (m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure)
+					throw new Exception("The pruneBaseTreesWithoutPreservingConsolidatedStructure option was not implemented, when priority criteria is equal to Original!");
+				if (m_PCTBconsolidationPercentHowToSet == NumberConsoNodes_Value)
+					throw new Exception("It is not possible to indicate the number of nodes to be consolidated as a specific value, when priority criteria is equal to Original!");
+				localClassifier = new C45PartiallyConsolidatedPruneableClassifierTree(
+						modSelection, baseModelToForceDecision,
+						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length);
+				break;
+			default:
+				localClassifier = new C45ItPartiallyConsolidatedPruneableClassifierTree(
+						modSelection, baseModelToForceDecision,
 						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length,
+						m_PCTBconsolidationPercentHowToSet,
+						m_PCTBpriorityCriteria, m_PCTBheuristicSearchAlgorithm, !m_PCTBunprunedCT, m_PCTBcollapseCT,
 						m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure);
-
+		}
 		localClassifier.buildClassifier(instances, samplesVector, m_PCTBconsolidationPercent);
 
 		m_root = localClassifier;
@@ -860,7 +879,7 @@ public class J48PartiallyConsolidated
 		result.add("-PCTB-C");
 		result.add("" + m_PCTBconsolidationPercent);
 
-		if (m_PCTBnumberConsoNodesHowToSet == NumberConsoNodes_Percentage)
+		if (m_PCTBconsolidationPercentHowToSet == NumberConsoNodes_Percentage)
 			result.add("-PCTB-BP");
 
 		result.add("-PCTB-PC");
@@ -929,7 +948,7 @@ public class J48PartiallyConsolidated
 			else
 				st += " using Best-first as heuristic search algorithm\n";
 		}
-		if (m_PCTBnumberConsoNodesHowToSet == NumberConsoNodes_Percentage) {
+		if (m_PCTBconsolidationPercentHowToSet == NumberConsoNodes_Percentage) {
 			if (m_PCTBpriorityCriteria == PriorCrit_Levelbylevel) {
 				st += "Consolidation percent (in terms of number of levels of the tree) = " + Utils.doubleToString(m_PCTBconsolidationPercent,2) + "%";
 				if (m_root != null) {
@@ -1314,7 +1333,7 @@ public class J48PartiallyConsolidated
 	 * @throws Exception if an option is not supported
 	 */
 	public void setPCTBconsolidationPercent(float v) throws Exception {
-		if (m_PCTBnumberConsoNodesHowToSet ==  NumberConsoNodes_Percentage) {
+		if (m_PCTBconsolidationPercentHowToSet ==  NumberConsoNodes_Percentage) {
 			if ((v < 0) || (v > 100))
 				throw new Exception("The consolidation percent (%) has to be a value greater than or equal to zero and smaller " +
 						"than or equal to 100!");
@@ -1327,28 +1346,28 @@ public class J48PartiallyConsolidated
 	 * @return tip text for this property suitable for
 	 * displaying in the explorer/experimenter gui
 	 */
-	public String PCTBnumberConsoNodesHowToSetTipText() {
+	public String PCTBconsolidationPercentHowToSetTipText() {
 		return "Way to set the number of nodes to be developed from the partial consolidated tree:\n" +
-				" * using a fixed value which directly indicates the number nodes to consolidate or\n" +
-				" * based on a value as a percentage with regard to the number of nodes in the whole\n" +
+				" · using a fixed value which directly indicates the number nodes to consolidate or\n" +
+				" · based on a value as a percentage with regard to the number of nodes in the whole\n" +
 				"   consolidated tree.\n";
 	}
 	
 	/**
-	 * Get the value of PCTBnumberConsoNodesHowToSet.
+	 * Get the value of PCTBconsolidationPercentHowToSet.
 	 *
-	 * @return Value of PCTBnumberConsoNodesHowToSet.
+	 * @return Value of PCTBconsolidationPercentHowToSet.
 	 */
-	public SelectedTag getPCTBnumberConsoNodesHowToSet() {
-		return new SelectedTag(m_PCTBnumberConsoNodesHowToSet,
-				TAGS_WAYS_TO_SET_PRIORITY_CRITERIA);
+	public SelectedTag getPCTconsolidationPercentHowToSet() {
+		return new SelectedTag(m_PCTBconsolidationPercentHowToSet,
+				TAGS_WAYS_TO_SET_NUMBER_CONSOLIDATED_NODES);
 	}
 	
 	/**
-	 * Set the value of PCTBnumberConsoNodesHowToSet. Values other than
+	 * Set the value of PCTBconsolidationPercentHowToSet. Values other than
 	 * NumberConsoNodes_Percentage, or NumberConsoNodes_Value will be ignored.
 	 *
-	 * @param newWayToSetNumberSamples the way to set the number of samples to use
+	 * @param newWayToSetnumberConsoNodes the way to set the number of samples to use
 	 * @throws Exception if an option is not supported
 	 */
 	public void setPCTBconsolidationPercentHowToSet(SelectedTag newWayToSetnumberConsoNodes) throws Exception {
@@ -1357,7 +1376,7 @@ public class J48PartiallyConsolidated
 			int newEvWay = newWayToSetnumberConsoNodes.getSelectedTag().getID();
 
 			if (newEvWay == NumberConsoNodes_Value || newEvWay == NumberConsoNodes_Percentage)
-				m_PCTBnumberConsoNodesHowToSet = newEvWay;
+				m_PCTBconsolidationPercentHowToSet = newEvWay;
 			else 
 				throw new IllegalArgumentException("Wrong selection type, value should be: "
 						+ "between 1 and 2");
@@ -1372,14 +1391,14 @@ public class J48PartiallyConsolidated
 	 */
 	public String PCTBpriorityCriteriaTipText() {
 		return "Build the partial consolidated tree driven by a criteria:\n" +
-				" ·Original (recursive)\n" +
-				" ·Level by level\n" +
-				" ·Node by node: Pre-order\n" +
-				" ·Node by node: Size\n" +
-				" ·Node by node: Gain ratio (Whole data)\n" + 
-				" ·Node by node: Gain ratio (Set of samples)\n" + 
-				" ·Node by node: Gain ratio (Whole data) x Size\n" +
-				" ·Node by node: Gain ratio (Set of samples) x Size\n";
+				" · Original (recursive)\n" +
+				" · Level by level\n" +
+				" · Node by node: Pre-order\n" +
+				" · Node by node: Size\n" +
+				" · Node by node: Gain ratio (Whole data)\n" + 
+				" · Node by node: Gain ratio (Set of samples)\n" + 
+				" · Node by node: Gain ratio (Whole data) x Size\n" +
+				" · Node by node: Gain ratio (Set of samples) x Size\n";
 	}
 
 	/**
@@ -1387,7 +1406,7 @@ public class J48PartiallyConsolidated
 	 * 
 	 * @return Value of PCTBpriorityCriteria.
 	 */
-	public SelectedTag getITPCTpriorityCriteria() {
+	public SelectedTag getPCTBpriorityCriteria() {
 		return new SelectedTag(m_PCTBpriorityCriteria,
 				TAGS_WAYS_TO_SET_PRIORITY_CRITERIA);
 	}

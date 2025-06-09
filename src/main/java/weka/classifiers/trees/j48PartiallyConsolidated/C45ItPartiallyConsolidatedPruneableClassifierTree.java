@@ -1,16 +1,13 @@
 /**
  *
  */
-package weka.classifiers.trees.j48ItPartiallyConsolidated;
+package weka.classifiers.trees.j48PartiallyConsolidated;
 
-import weka.classifiers.trees.j48Consolidated.C45ConsolidatedModelSelection;
-import weka.classifiers.trees.j48PartiallyConsolidated.C45ModelSelectionExtended;
-import weka.classifiers.trees.j48PartiallyConsolidated.C45PartiallyConsolidatedPruneableClassifierTree;
-import weka.classifiers.trees.j48PartiallyConsolidated.C45PruneableClassifierTreeExtended;
 
 import java.util.ArrayList;
 
-import weka.classifiers.trees.J48ItPartiallyConsolidated;
+import weka.classifiers.trees.j48Consolidated.C45ConsolidatedModelSelection;
+import weka.classifiers.trees.J48PartiallyConsolidated;
 import weka.classifiers.trees.j48.C45Split;
 import weka.classifiers.trees.j48.ClassifierSplitModel;
 import weka.classifiers.trees.j48.ClassifierTree;
@@ -21,15 +18,10 @@ import weka.core.Utils;
 /**
  * Class for handling a consolidated tree structure that can be pruned using
  * C4.5 procedures.
- * *************************************************************************************
- * Attention! Removed 'final' modifier from collapse() function of
- * j48/C45PruneableClassifierTree class and from cleanup() function of
- * j48/ClassifierTree class in order to overwrite these functions here.
- * *************************************************************************************<br/>
  *
- * @author Josué Cabezas Regoyo
  * @author Jesús M. Pérez (txus.perez@ehu.eus)
- * @version $Revision: 0.3 $
+ * @author Josué Cabezas Regoyo
+ * @version $Revision: 1.0 $
  */
 public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45PartiallyConsolidatedPruneableClassifierTree {
 
@@ -44,6 +36,11 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	 * default.
 	 */
 	private int m_maximumCriteria;
+
+	/** Selected way to set the number of nodes to be developed from the partial consolidated tree;
+	 * based on a percentage value or by using a concrete value.
+	 */
+	private int m_numberConsoNodesHowToSet;
 
 	/** Indicates the criteria that should be used to build the tree */
 	private int m_priorityCriteria;
@@ -99,9 +96,10 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	 * @param cleanup               true if cleanup has to be done
 	 * @param collapseTree          true if collapse has to be done
 	 * @param numberSamples         Number of Samples
+	 * @param numberConsoNodesHowToSet How to set the number of consolidated nodes
 	 * @param ITPCTmaximumCriteria  maximum number of nodes or levels
-	 * @param ITPCTpriorityCriteria criteria to build the tree
-	 * @param ITPCTheuristicSearchAlgorithm search algorithm to build the tree
+	 * @param priorityCriteria criteria to build the tree
+	 * @param heuristicSearchAlgorithm search algorithm to build the tree
 	 * @param pruneCT true if the CT tree is to be pruned
 	 * @param collapseCT true if the CT tree is to be collapsed
 	 * @throws Exception if something goes wrong
@@ -111,14 +109,16 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			boolean pruneTree, float cf,
 			boolean raiseTree, boolean cleanup, 
 			boolean collapseTree, int numberSamples,
-			boolean notPreservingStructure,
-			int ITPCTpriorityCriteria, int ITPCTheuristicSearchAlgorithm, 
-			boolean pruneCT, boolean collapseCT) throws Exception {
+			int numberConsoNodesHowToSet,
+			int priorityCriteria, int heuristicSearchAlgorithm, 
+			boolean pruneCT, boolean collapseCT,
+			boolean notPreservingStructure) throws Exception {
 		super(toSelectLocModel, baseModelToForceDecision, pruneTree, cf, raiseTree, cleanup, collapseTree,
 				numberSamples);
 
-		m_priorityCriteria = ITPCTpriorityCriteria;
-		m_heuristicSearchAlgorithm = ITPCTheuristicSearchAlgorithm;
+		m_numberConsoNodesHowToSet = numberConsoNodesHowToSet;
+		m_priorityCriteria = priorityCriteria;
+		m_heuristicSearchAlgorithm = heuristicSearchAlgorithm;
 		m_pruneTheConsolidatedTree = pruneCT;
 		m_collapseTheCTree = collapseCT;
 		m_pruneBaseTreesWithoutPreservingConsolidatedStructure=notPreservingStructure;
@@ -134,70 +134,14 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	 * @param consolidationPercent the value of consolidation percent
 	 * @throws Exception if something goes wrong
 	 */
-	public void buildClassifier(Instances data, Instances[] samplesVector, float consolidationPercent,
-			int consolidationNumberHowToSet) throws Exception {
+	public void buildClassifier(Instances data, Instances[] samplesVector, float consolidationPercent) throws Exception {
 		long trainTimeStart = 0, trainTimeElapsed = 0;
-		if (m_priorityCriteria == J48ItPartiallyConsolidated.Original) {
 
-			m_pruneTheTree = m_pruneTheConsolidatedTree;
-			m_collapseTheTree = m_collapseTheCTree;
-			super.buildClassifier(data, samplesVector, consolidationPercent);
-
-		} else {
-			if (consolidationNumberHowToSet == J48ItPartiallyConsolidated.ConsolidationNumber_Percentage) {
-								
-				trainTimeStart = System.currentTimeMillis();
-				super.buildTree(data, samplesVector, m_subtreeRaising || !m_cleanup); // build the tree without restrictions
-								
-				if (m_collapseTheCTree) {
-					collapse();
-				}
-				if (m_pruneTheConsolidatedTree) {
-					prune();
-				}
-				trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
-				System.out.println("Time taken to build the whole consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
-				m_elapsedTimeTrainingWholeCT = trainTimeElapsed / (double)1000.0;
-
-				if (m_priorityCriteria == J48ItPartiallyConsolidated.Levelbylevel) {
-
-					// Number of levels of the consolidated tree
-					int treeLevels = numLevels();
-
-					// Number of levels of the consolidated tree to leave as consolidated based on
-					// given consolidationPercent
-					int numberLevelsConso = (int) (((treeLevels * consolidationPercent) / 100) + 0.5);
-					m_maximumCriteria = numberLevelsConso;
-					setNumInternalNodesConso(numberLevelsConso);
-					System.out.println(
-							"Number of levels to leave as consolidated: " + numberLevelsConso + " of " + treeLevels);
-
-				} else {
-
-					// Number of internal nodes of the consolidated tree
-					int innerNodes = numNodes() - numLeaves();
-
-					// Number of nodes of the consolidated tree to leave as consolidated based on
-					// given consolidationPercent
-					int numberNodesConso = (int) (((innerNodes * consolidationPercent) / 100) + 0.5);
-					m_maximumCriteria = numberNodesConso;
-					setNumInternalNodesConso(numberNodesConso);
-					System.out.println(
-							"Number of nodes to leave as consolidated: " + numberNodesConso + " of " + innerNodes);
-
-				}
-
-			} else // consolidationNumberHowToSet ==
-					// J48ItPartiallyConsolidated.ConsolidationNumber_Value
-			{
-				m_maximumCriteria = (int) consolidationPercent;
-				System.out.println("Number of nodes or levels to leave as consolidated: " + m_maximumCriteria);
-				m_elapsedTimeTrainingWholeCT = (double)0.0;
-			}
-
-			// buildTree
+		if (m_numberConsoNodesHowToSet == J48PartiallyConsolidated.NumberConsoNodes_Percentage) {
+							
 			trainTimeStart = System.currentTimeMillis();
-			buildTree(data, samplesVector, m_subtreeRaising || !m_cleanup);
+			super.buildTree(data, samplesVector, m_subtreeRaising || !m_cleanup); // build the tree without restrictions
+							
 			if (m_collapseTheCTree) {
 				collapse();
 			}
@@ -205,32 +149,80 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 				prune();
 			}
 			trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
-			System.out.println("Time taken to build the partial consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
-			m_elapsedTimeTrainingPartialCT = trainTimeElapsed / (double)1000.0;
+			System.out.println("Time taken to build the whole consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
+			m_elapsedTimeTrainingWholeCT = trainTimeElapsed / (double)1000.0;
 
-			trainTimeStart = System.currentTimeMillis();
-			applyBagging();
-			trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
-			System.out.println("Time taken to build the associated Bagging: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
-			m_elapsedTimeTrainingAssocBagging = trainTimeElapsed / (double)1000.0;
+			if (m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Levelbylevel) {
 
-			if (m_cleanup)
-				cleanup(new Instances(data, 0));
+				// Number of levels of the consolidated tree
+				int treeLevels = numLevels();
+
+				// Number of levels of the consolidated tree to leave as consolidated based on
+				// given consolidationPercent
+				int numberLevelsConso = (int) (((treeLevels * consolidationPercent) / 100) + 0.5);
+				m_maximumCriteria = numberLevelsConso;
+				setNumInternalNodesConso(numberLevelsConso);
+				System.out.println(
+						"Number of levels to leave as consolidated: " + numberLevelsConso + " of " + treeLevels);
+
+			} else {
+
+				// Number of internal nodes of the consolidated tree
+				int innerNodes = numNodes() - numLeaves();
+
+				// Number of nodes of the consolidated tree to leave as consolidated based on
+				// given consolidationPercent
+				int numberNodesConso = (int) (((innerNodes * consolidationPercent) / 100) + 0.5);
+				m_maximumCriteria = numberNodesConso;
+				setNumInternalNodesConso(numberNodesConso);
+				System.out.println(
+						"Number of nodes to leave as consolidated: " + numberNodesConso + " of " + innerNodes);
+
+			}
+
+		} else // consolidationNumberHowToSet ==
+				// J48PartiallyConsolidated.ConsolidationNumber_Value
+		{
+			m_maximumCriteria = (int) consolidationPercent;
+			System.out.println("Number of nodes or levels to leave as consolidated: " + m_maximumCriteria);
+			m_elapsedTimeTrainingWholeCT = (double)0.0;
 		}
+
+		// buildTree
+		trainTimeStart = System.currentTimeMillis();
+		buildPartialTreeItera(data, samplesVector, m_subtreeRaising || !m_cleanup);
+		if (m_collapseTheCTree) {
+			collapse();
+		}
+		if (m_pruneTheConsolidatedTree) {
+			prune();
+		}
+		trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
+		System.out.println("Time taken to build the partial consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
+		m_elapsedTimeTrainingPartialCT = trainTimeElapsed / (double)1000.0;
+
+		trainTimeStart = System.currentTimeMillis();
+		applyBagging();
+		trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
+		System.out.println("Time taken to build the associated Bagging: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
+		m_elapsedTimeTrainingAssocBagging = trainTimeElapsed / (double)1000.0;
+
+		if (m_cleanup)
+			cleanup(new Instances(data, 0));
 		if(!m_isLeaf)
 			computeNumberBaseTreesPreservingPartialCTStructure();
 	}
 
 	/**
-	 * Builds the consolidated tree structure. (based on the method buildTree() of
-	 * the class 'ClassifierTree')
+	 * Builds the partial consolidated tree structure, in this case
+	 * iteratively (instead of recursively as in the original method, buildTree()).
 	 *
 	 * @param data          the data for pruning the consolidated tree
 	 * @param samplesVector the vector of samples used for consolidation
 	 * @param keepData      is training data to be kept?
 	 * @throws Exception if something goes wrong
 	 */
-	public void buildTree(Instances data, Instances[] samplesVector, boolean keepData) throws Exception {
+	public void buildPartialTreeItera(Instances data, Instances[] samplesVector, boolean keepData) throws Exception {
 		/** Number of Samples. */
 		int numberSamples = samplesVector.length;
 
@@ -297,9 +289,9 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 				currentTree.m_sampleTreeVector[iSample].setLocalModel(currentSamplesVector[iSample],
 						currentTree.m_localModel);
 
-			if ((currentTree.m_localModel.numSubsets() > 1) && ((m_priorityCriteria == J48ItPartiallyConsolidated.Original)
-					|| ((m_priorityCriteria == J48ItPartiallyConsolidated.Levelbylevel) && (currentLevel < m_maximumCriteria))
-					|| ((m_priorityCriteria > J48ItPartiallyConsolidated.Levelbylevel) && (internalNodes < m_maximumCriteria)))) {
+			if ((currentTree.m_localModel.numSubsets() > 1) &&
+					( ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Levelbylevel) && (currentLevel < m_maximumCriteria))
+					|| ((m_priorityCriteria > J48PartiallyConsolidated.PriorCrit_Levelbylevel) && (internalNodes < m_maximumCriteria)))) {
 
 				/** Vector storing the obtained subsamples after the split of data */
 				Instances[] localInstances;
@@ -350,33 +342,34 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 					C45ItPartiallyConsolidatedPruneableClassifierTree newTree = new C45ItPartiallyConsolidatedPruneableClassifierTree(
 							currentTree.m_toSelectModel, baseModelToForceDecision, m_pruneTheTree, m_CF,
 							m_subtreeRaising, m_cleanup, m_collapseTheTree, localSamplesVector.length,
-							m_pruneBaseTreesWithoutPreservingConsolidatedStructure,
-							m_priorityCriteria, m_heuristicSearchAlgorithm, m_pruneTheConsolidatedTree, m_collapseTheCTree);
+							m_numberConsoNodesHowToSet,
+							m_priorityCriteria, m_heuristicSearchAlgorithm, m_pruneTheConsolidatedTree, m_collapseTheCTree,
+							m_pruneBaseTreesWithoutPreservingConsolidatedStructure);
 
 					/** Set the recent created base trees like the sons of the given parent node */
 					for (int iSample = 0; iSample < numberSamples; iSample++)
 						((C45PruneableClassifierTreeExtended) currentTree.m_sampleTreeVector[iSample]).setIthSon(iSon,
 								newTree.m_sampleTreeVector[iSample]);
 
-					if (m_priorityCriteria == J48ItPartiallyConsolidated.Size) // Added by size, largest to smallest
+					if (m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Size) // Added by size, largest to smallest
 					{
 
 						orderValue = currentTree.m_localModel.distribution().perBag(iSon);
 
 						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue,
 								currentLevel + 1 };
-						if (m_heuristicSearchAlgorithm == J48ItPartiallyConsolidated.BestFirst)
+						if (m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_BestFirst)
 							addSonOrderedByValue(list, son);
 						else
 							addSonOrderedByValue(listSons, son);
 
-					} else if ((m_priorityCriteria >= J48ItPartiallyConsolidated.GainratioWholeData) &&
-								(m_priorityCriteria <= J48ItPartiallyConsolidated.GainratioSetSamples_Size)) // Added by gainratio,
+					} else if ((m_priorityCriteria >= J48PartiallyConsolidated.PriorCrit_GainratioWholeData) &&
+								(m_priorityCriteria <= J48PartiallyConsolidated.PriorCrit_GainratioSetSamples_Size)) // Added by gainratio,
 																							// largest to smallest
 					{
 						ClassifierSplitModel sonModel;
-						if ((m_priorityCriteria == J48ItPartiallyConsolidated.GainratioWholeData) ||
-								(m_priorityCriteria == J48ItPartiallyConsolidated.GainratioWholeData_Size))
+						if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData) ||
+								(m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData_Size))
 							sonModel = newTree.m_toSelectModel.
 									selectModel(localInstances[iSon]);
 						else
@@ -385,8 +378,8 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 
 						if (sonModel.numSubsets() > 1) {
 							orderValue = ((C45Split) sonModel).gainRatio();
-							if ((m_priorityCriteria == J48ItPartiallyConsolidated.GainratioWholeData_Size) ||
-									(m_priorityCriteria == J48ItPartiallyConsolidated.GainratioSetSamples_Size)) {
+							if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData_Size) ||
+									(m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioSetSamples_Size)) {
 								double size = currentTree.m_localModel.distribution().perBag(iSon);
 								orderValue = orderValue * size;
 							}
@@ -396,7 +389,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 						
 						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue,
 								currentLevel + 1 };
-						if (m_heuristicSearchAlgorithm == J48ItPartiallyConsolidated.BestFirst)
+						if (m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_BestFirst)
 							addSonOrderedByValue(list, son);
 						else
 							addSonOrderedByValue(listSons, son);
@@ -411,11 +404,10 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 					localSamplesVector = null;
 				}
 
-				if (m_priorityCriteria == J48ItPartiallyConsolidated.Levelbylevel)
+				if (m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Levelbylevel)
 					list.addAll(listSons);
-				else if ((m_priorityCriteria == J48ItPartiallyConsolidated.Preorder) ||
-							(m_priorityCriteria == J48ItPartiallyConsolidated.Original) ||
-							(m_heuristicSearchAlgorithm == J48ItPartiallyConsolidated.HillClimbing)) {
+				else if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Preorder) ||
+							(m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_HillClimbing)) {
 					listSons.addAll(list);
 					list = listSons;
 				}

@@ -5,7 +5,6 @@ package weka.classifiers.trees.j48PartiallyConsolidated;
 
 import weka.classifiers.trees.j48Consolidated.C45ConsolidatedModelSelection;
 import weka.classifiers.trees.j48Consolidated.C45ConsolidatedPruneableClassifierTree;
-import weka.classifiers.trees.j48ItPartiallyConsolidated.C45ItPartiallyConsolidatedPruneableClassifierTree;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,8 +65,7 @@ public class C45PartiallyConsolidatedPruneableClassifierTree extends
 			ModelSelection toSelectLocModel, C45ModelSelectionExtended baseModelToForceDecision,
 			boolean pruneTree, float cf,
 			boolean raiseTree, boolean cleanup,
-			boolean collapseTree, int numberSamples,
-			boolean notPreservingStructure) throws Exception {
+			boolean collapseTree, int numberSamples) throws Exception {
 		super(toSelectLocModel, pruneTree, cf, raiseTree, cleanup, collapseTree);
 		// Initialize each base decision tree of the vector
 		ModelSelection modelToConsolidate = ((C45ConsolidatedModelSelection)toSelectLocModel).getModelToConsolidate();
@@ -75,7 +73,7 @@ public class C45PartiallyConsolidatedPruneableClassifierTree extends
 		for (int iSample = 0; iSample < numberSamples; iSample++)
 			m_sampleTreeVector[iSample] = new C45PruneableClassifierTreeExtended(
 					modelToConsolidate,	baseModelToForceDecision, pruneTree, cf, raiseTree, cleanup, collapseTree,
-					notPreservingStructure);
+					false);
 	}
 
 	/**
@@ -226,8 +224,7 @@ public class C45PartiallyConsolidatedPruneableClassifierTree extends
 		C45ModelSelectionExtended baseModelToForceDecision = m_sampleTreeVector[0].getBaseModelToForceDecision();
 		C45PartiallyConsolidatedPruneableClassifierTree newTree =
 				new C45PartiallyConsolidatedPruneableClassifierTree(m_toSelectModel, baseModelToForceDecision,
-						m_pruneTheTree, m_CF, m_subtreeRaising, m_cleanup, m_collapseTheTree , samplesVector.length,
-						m_pruneBaseTreesWithoutPreservingConsolidatedStructure);
+						m_pruneTheTree, m_CF, m_subtreeRaising, m_cleanup, m_collapseTheTree , samplesVector.length);
 		/** Set the recent created base trees like the sons of the given parent node */
 		for (int iSample = 0; iSample < numberSamples; iSample++)
 			((C45PruneableClassifierTreeExtended)sampleTreeVectorParent[iSample]).setIthSon(iSon, newTree.m_sampleTreeVector[iSample]);
