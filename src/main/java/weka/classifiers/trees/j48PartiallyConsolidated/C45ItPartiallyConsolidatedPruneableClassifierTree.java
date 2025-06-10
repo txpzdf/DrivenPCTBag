@@ -199,29 +199,16 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			System.out.println("Time taken to build the whole consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
 			m_elapsedTimeTrainingWholeCT = trainTimeElapsed / (double)1000.0;
 
-			if (m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Levelbylevel) {
-				// Number of levels of the consolidated tree
-				int treeLevels = numLevels();
+			// Number of internal nodes of the consolidated tree
+			int innerNodes = numNodes() - numLeaves();
 
-				// Number of levels of the consolidated tree to leave as consolidated based on
-				// given consolidationPercent
-				int numberLevelsConso = (int) (((treeLevels * consolidationPercent) / 100) + 0.5);
-				m_maximumCriteria = numberLevelsConso;
-				setNumInternalNodesConso(numberLevelsConso);
-				System.out.println(
-						"Number of levels to leave as consolidated: " + numberLevelsConso + " of " + treeLevels);
-			} else {
-				// Number of internal nodes of the consolidated tree
-				int innerNodes = numNodes() - numLeaves();
-
-				// Number of nodes of the consolidated tree to leave as consolidated based on
-				// given consolidationPercent
-				int numberNodesConso = (int) (((innerNodes * consolidationPercent) / 100) + 0.5);
-				m_maximumCriteria = numberNodesConso;
-				setNumInternalNodesConso(numberNodesConso);
-				System.out.println(
-						"Number of nodes to leave as consolidated: " + numberNodesConso + " of " + innerNodes);
-			}
+			// Number of nodes of the consolidated tree to leave as consolidated based on
+			// given consolidationPercent
+			int numberNodesConso = (int) (((innerNodes * consolidationPercent) / 100) + 0.5);
+			m_maximumCriteria = numberNodesConso;
+			setNumInternalNodesConso(numberNodesConso);
+			System.out.println(
+					"Number of nodes to leave as consolidated: " + numberNodesConso + " of " + innerNodes);
 		} else { // m_numberConsoNodesHowToSet == J48PartiallyConsolidated.NumberConsoNodes_Value
 			m_maximumCriteria = (int) consolidationPercent;
 			System.out.println("Number of nodes or levels to leave as consolidated: " + m_maximumCriteria);
@@ -250,8 +237,8 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 
 		ArrayList<Object[]> list = new ArrayList<>();
 
-		// add(Data, samplesVector, tree, orderValue, currentLevel)
-		list.add(new Object[] { data, samplesVector, this, null, 0 }); // The parent node is considered level 0
+		// add(Data, samplesVector, tree, orderValue)
+		list.add(new Object[] { data, samplesVector, this, null }); // The parent node is considered level 0
 
 		int index = 0;
 		double orderValue;
@@ -261,9 +248,6 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 		while (list.size() > 0) {
 
 			Object[] current = list.get(0);
-
-			/** Current node level. **/
-			int currentLevel = (int) current[4];
 
 			/** Number of Samples. */
 			Instances[] currentSamplesVector = (Instances[]) current[1];
@@ -290,9 +274,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 				currentTree.m_sampleTreeVector[iSample].setLocalModel(currentSamplesVector[iSample],
 						currentTree.getLocalModel());
 
-			if ((currentTree.getLocalModel().numSubsets() > 1) &&
-					( ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Levelbylevel) && (currentLevel < m_maximumCriteria))
-					|| ((m_priorityCriteria > J48PartiallyConsolidated.PriorCrit_Levelbylevel) && (internalNodes < m_maximumCriteria)))) {
+			if ((currentTree.getLocalModel().numSubsets() > 1) && (internalNodes < m_maximumCriteria)) {
 
 				/** Vector storing the obtained subsamples after the split of data */
 				Instances[] localInstances;
@@ -357,8 +339,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 
 						orderValue = currentTree.getLocalModel().distribution().perBag(iSon);
 
-						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue,
-								currentLevel + 1 };
+						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue};
 						if (m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_BestFirst)
 							addSonOrderedByValue(list, son);
 						else
@@ -388,16 +369,13 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 						else
 							orderValue = (double) Double.MIN_VALUE;
 						
-						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue,
-								currentLevel + 1 };
+						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue};
 						if (m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_BestFirst)
 							addSonOrderedByValue(list, son);
 						else
 							addSonOrderedByValue(listSons, son);
-					} else {
-						listSons.add(new Object[] { localInstances[iSon], localSamplesVector, newTree, 0,
-								currentLevel + 1 });
-					}
+					} else
+						listSons.add(new Object[] { localInstances[iSon], localSamplesVector, newTree, 0});
 
 					currentTree.setIthSon(iSon, newTree);
 
@@ -405,10 +383,8 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 					localSamplesVector = null;
 				}
 
-				if (m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Levelbylevel)
-					list.addAll(listSons);
-				else if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Preorder) ||
-							(m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_HillClimbing)) {
+				if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Preorder) ||
+					(m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_HillClimbing)) {
 					listSons.addAll(list);
 					list = listSons;
 				}
