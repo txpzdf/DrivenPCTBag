@@ -16,8 +16,11 @@ import weka.core.Instances;
 import weka.core.Utils;
 
 /**
- * Class for handling a consolidated tree structure that can be pruned using
- * C4.5 procedures.
+ * Class for handling a 'partial' consolidated tree structure
+ * (based on a consolidation percentage or on a specific value) but
+ * the tree is processed iteratively (instead of recursively like 
+ * the original version) and allows to decide which will be the 
+ * next node to be developed according to a priority criterion.
  *
  * @author Jesús M. Pérez (txus.perez@ehu.eus)
  * @author Josué Cabezas Regoyo
@@ -29,24 +32,24 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	private static final long serialVersionUID = 6410655550027990502L;
 
 	/** Indicates the order in which the node was treated */
-	private int m_order;
+	protected int m_order;
 
 	/**
 	 * Builds the tree up to a maximum of depth levels. Set m_maximumLevel to 0 for
 	 * default.
 	 */
-	private int m_maximumCriteria;
+	protected int m_maximumCriteria;
 
 	/** Selected way to set the number of nodes to be developed from the partial consolidated tree;
 	 * based on a percentage value or by using a concrete value.
 	 */
-	private int m_numberConsoNodesHowToSet;
+	protected int m_numberConsoNodesHowToSet;
 
 	/** Indicates the criteria that should be used to build the tree */
-	private int m_priorityCriteria;
+	protected int m_priorityCriteria;
 	
 	/** Indicates the heuristic search algorithm that should be used to build the tree */
-	private int m_heuristicSearchAlgorithm;
+	protected int m_heuristicSearchAlgorithm;
 
 	/** True if the partial Consolidated tree(CT) is to be pruned. */
 	protected boolean m_pruneTheConsolidatedTree = false;
@@ -126,7 +129,10 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	}
 
 	/**
-	 * Method for building a pruneable classifier consolidated tree.
+	 * Method for building a pruneable classifier partial consolidated tree;
+	 * but iteratively; and directly, if a specific number of nodes to be 
+	 * developed is indicated (instead of the consolidation percentage),
+	 * being driven on the basis of a priority criterion. 
 	 *
 	 * @param data                 the data for pruning the consolidated tree
 	 * @param samplesVector        the vector of samples for building the
@@ -227,13 +233,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 		int numberSamples = samplesVector.length;
 
 		/** Initialize the consolidated tree */
-		if (keepData) {
-			m_train = data;
-		}
-		m_test = null;
-		m_isLeaf = false;
-		m_isEmpty = false;
-		m_sons = null;
+		initiliazeTree(data, keepData);
 		/** Initialize the base trees */
 		for (int iSample = 0; iSample < numberSamples; iSample++)
 			m_sampleTreeVector[iSample].initiliazeTree(samplesVector[iSample], keepData);
@@ -257,7 +257,6 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 
 			/** Number of Samples. */
 			Instances[] currentSamplesVector = (Instances[]) current[1];
-			//int numberSamples = currentSamplesVector.length;
 
 			list.set(0, null); // Null to free up memory
 			list.remove(0);
@@ -267,14 +266,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			currentTree.m_order = index;
 
 			/** Initialize the consolidated tree */
-			if (keepData) {
-				currentTree.m_train = currentData;
-			}
-			currentTree.m_test = null;
-			currentTree.m_isLeaf = false;
-			currentTree.m_isEmpty = false;
-			currentTree.m_sons = null;
-
+			currentTree.initiliazeTree(currentData, keepData);
 			/** Initialize the base trees */
 			for (int iSample = 0; iSample < numberSamples; iSample++)
 				currentTree.m_sampleTreeVector[iSample].initiliazeTree(currentSamplesVector[iSample], keepData);
@@ -283,13 +275,12 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			 * Select the best model to split (if it is worth) based on the consolidation
 			 * proccess
 			 */
-			currentTree.m_localModel = ((C45ConsolidatedModelSelection) currentTree.m_toSelectModel)
-					.selectModel(currentData, currentSamplesVector);
+			currentTree.setLocalModel(currentData, currentSamplesVector);
 			for (int iSample = 0; iSample < numberSamples; iSample++)
 				currentTree.m_sampleTreeVector[iSample].setLocalModel(currentSamplesVector[iSample],
-						currentTree.m_localModel);
+						currentTree.getLocalModel());
 
-			if ((currentTree.m_localModel.numSubsets() > 1) &&
+			if ((currentTree.getLocalModel().numSubsets() > 1) &&
 					( ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Levelbylevel) && (currentLevel < m_maximumCriteria))
 					|| ((m_priorityCriteria > J48PartiallyConsolidated.PriorCrit_Levelbylevel) && (internalNodes < m_maximumCriteria)))) {
 
@@ -314,9 +305,9 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 						currentTree.m_sampleTreeVector[iSample].setIsEmpty(true);
 
 				/** Split data according to the consolidated m_localModel */
-				localInstances = currentTree.m_localModel.split(currentData);
+				localInstances = currentTree.getLocalModel().split(currentData);
 				for (int iSample = 0; iSample < numberSamples; iSample++)
-					localInstancesVector.add(currentTree.m_localModel.split(currentSamplesVector[iSample]));
+					localInstancesVector.add(currentTree.getLocalModel().split(currentSamplesVector[iSample]));
 
 				/**
 				 * Create the child nodes of the current node and call recursively to
@@ -324,15 +315,15 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 				 */
 				currentData = null;
 				currentSamplesVector = null;
-				currentTree.m_sons = new ClassifierTree[currentTree.m_localModel.numSubsets()];
+				currentTree.createSonsVector(currentTree.getLocalModel().numSubsets());
 				for (int iSample = 0; iSample < numberSamples; iSample++)
 					((C45PruneableClassifierTreeExtended) currentTree.m_sampleTreeVector[iSample])
-							.createSonsVector(currentTree.m_localModel.numSubsets());
+							.createSonsVector(currentTree.getLocalModel().numSubsets());
 
 				//////////////////
 				C45ModelSelectionExtended baseModelToForceDecision = 
 						currentTree.m_sampleTreeVector[0].getBaseModelToForceDecision();
-				for (int iSon = 0; iSon < currentTree.m_sons.length; iSon++) {
+				for (int iSon = 0; iSon < currentTree.getSons().length; iSon++) {
 					/** Vector storing the subsamples related to the iSon-th son */
 					Instances[] localSamplesVector = new Instances[numberSamples];
 					for (int iSample = 0; iSample < numberSamples; iSample++)
@@ -340,7 +331,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 
 					// getNewTree
 					C45ItPartiallyConsolidatedPruneableClassifierTree newTree = new C45ItPartiallyConsolidatedPruneableClassifierTree(
-							currentTree.m_toSelectModel, baseModelToForceDecision, m_pruneTheTree, m_CF,
+							currentTree.getToSelectModel(), baseModelToForceDecision, m_pruneTheTree, m_CF,
 							m_subtreeRaising, m_cleanup, m_collapseTheTree, localSamplesVector.length,
 							m_numberConsoNodesHowToSet,
 							m_priorityCriteria, m_heuristicSearchAlgorithm, m_pruneTheConsolidatedTree, m_collapseTheCTree,
@@ -354,7 +345,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 					if (m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Size) // Added by size, largest to smallest
 					{
 
-						orderValue = currentTree.m_localModel.distribution().perBag(iSon);
+						orderValue = currentTree.getLocalModel().distribution().perBag(iSon);
 
 						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue,
 								currentLevel + 1 };
@@ -370,17 +361,17 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 						ClassifierSplitModel sonModel;
 						if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData) ||
 								(m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData_Size))
-							sonModel = newTree.m_toSelectModel.
+							sonModel = newTree.getToSelectModel().
 									selectModel(localInstances[iSon]);
 						else
-							sonModel = ((C45ConsolidatedModelSelection)newTree.m_toSelectModel).
+							sonModel = ((C45ConsolidatedModelSelection)newTree.getToSelectModel()).
 									selectModel(localInstances[iSon], localSamplesVector);
 
 						if (sonModel.numSubsets() > 1) {
 							orderValue = ((C45Split) sonModel).gainRatio();
 							if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData_Size) ||
 									(m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioSetSamples_Size)) {
-								double size = currentTree.m_localModel.distribution().perBag(iSon);
+								double size = currentTree.getLocalModel().distribution().perBag(iSon);
 								orderValue = orderValue * size;
 							}
 						}
@@ -398,7 +389,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 								currentLevel + 1 });
 					}
 
-					currentTree.m_sons[iSon] = newTree;
+					currentTree.setIthSon(iSon, newTree);
 
 					localInstances[iSon] = null;
 					localSamplesVector = null;
@@ -418,12 +409,12 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 				internalNodes++;
 
 			} else {
-				currentTree.m_isLeaf = true;
+				currentTree.setIsLeaf(true);
 				for (int iSample = 0; iSample < numberSamples; iSample++)
 					currentTree.m_sampleTreeVector[iSample].setIsLeaf(true);
 
-				if (Utils.eq(currentTree.m_localModel.distribution().total(), 0)) {
-					currentTree.m_isEmpty = true;
+				if (Utils.eq(currentTree.getLocalModel().distribution().total(), 0)) {
+					currentTree.setIsEmpty(true);
 					for (int iSample = 0; iSample < numberSamples; iSample++)
 						currentTree.m_sampleTreeVector[iSample].setIsEmpty(true);
 				}
@@ -431,7 +422,6 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 				currentSamplesVector = null;
 			}
 			index++;
-
 		}
 	}
 
@@ -451,6 +441,72 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			if (i == list.size())
 				list.add(son);
 		}
+	}
+
+	/**
+	 * Initializes the base tree to be build.
+	 * @param data instances in the current node related to the corresponding base decision tree
+	 * @param keepData  is training data to be kept?
+	 */
+	public void initiliazeTree(Instances data, boolean keepData) {
+		if (keepData) {
+			m_train = data;
+		}
+		m_test = null;
+		m_isLeaf = false;
+		m_isEmpty = false;
+		m_sons = null;
+	}
+
+	/**
+	 * Setter for m_isLeaf member.
+	 * @param isLeaf indicates if node is leaf
+	 */
+	public void setIsLeaf(boolean isLeaf) {
+		m_isLeaf = isLeaf;
+	}
+
+	/**
+	 * Setter for m_isEmpty member.
+	 * @param isEmpty indicates if node is empty
+	 */
+	public void setIsEmpty(boolean isEmpty) {
+		m_isEmpty = isEmpty;
+	}
+
+	/**
+	 * Set m_localModel based on the consolidation proccess.
+	 * @param data instances in the current node
+	 * @param samplesVector the vector of samples used for consolidation
+	 * @throws Exception if something goes wrong
+	 */
+	public void setLocalModel(Instances data, Instances[] samplesVector) throws Exception {
+		m_localModel = ((C45ConsolidatedModelSelection)m_toSelectModel).selectModel(data, samplesVector);
+	}
+
+	/**
+	 * Creates the vector to save the sons of the current node.
+	 * @param numSons Number of sons
+	 */
+	public void createSonsVector(int numSons) {
+		m_sons = new ClassifierTree [numSons];
+	}
+	
+	/**
+	 * Set given baseTree tree like the i-th son tree.
+	 * @param iSon Index of the vector to save the given tree
+	 * @param classifierTree the given to tree to save
+	 */
+	public void setIthSon(int iSon, ClassifierTree classifierTree) {
+		m_sons[iSon] = classifierTree;
+	}
+
+	/**
+	 * Getter for m_toSelectModel member.
+	 * return the model selection method
+	 */
+	public ModelSelection getToSelectModel() {
+		return m_toSelectModel;
 	}
 
 	/**
