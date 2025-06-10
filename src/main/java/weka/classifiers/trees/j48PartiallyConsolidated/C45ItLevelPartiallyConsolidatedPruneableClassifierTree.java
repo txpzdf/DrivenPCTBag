@@ -35,47 +35,6 @@ public class C45ItLevelPartiallyConsolidatedPruneableClassifierTree
 	}
 
 	/**
-	 * Method for building a pruneable classifier partial consolidated tree;
-	 * but based on a number of levels of the tree to be developed (indicated 
-	 * as a percentage of the number of levels of the whole consolidated tree
-	 * or a specific value). 
-	 *
-	 * @param data                 the data for pruning the consolidated tree
-	 * @param samplesVector        the vector of samples for building the
-	 *                             consolidated tree
-	 * @param consolidationPercent the value of consolidation percent
-	 * @throws Exception if something goes wrong
-	 */
-	public void buildClassifier(Instances data, Instances[] samplesVector, float consolidationPercent) throws Exception {
-		long trainTimeStart = 0, trainTimeElapsed = 0;
-
-		setNumberNodesToBeConsolidated(data, samplesVector, consolidationPercent);
-		// buildTree
-		trainTimeStart = System.currentTimeMillis();
-		buildPartialTreeItera(data, samplesVector, m_subtreeRaising || !m_cleanup);
-		if (m_collapseTheCTree) {
-			collapse();
-		}
-		if (m_pruneTheConsolidatedTree) {
-			prune();
-		}
-		trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
-		System.out.println("Time taken to build the partial consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
-		m_elapsedTimeTrainingPartialCT = trainTimeElapsed / (double)1000.0;
-
-		trainTimeStart = System.currentTimeMillis();
-		applyBagging();
-		trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
-		System.out.println("Time taken to build the associated Bagging: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
-		m_elapsedTimeTrainingAssocBagging = trainTimeElapsed / (double)1000.0;
-
-		if (m_cleanup)
-			cleanup(new Instances(data, 0));
-		if(!m_isLeaf)
-			computeNumberBaseTreesPreservingPartialCTStructure();
-	}
-
-	/**
 	 * Determines the number of levels of the partial tree to be developed based 
 	 * on a percentage value with respect to the number of levels of the whole 
 	 * consolidated tree (which must first be constructed) or based on a specific 
@@ -116,10 +75,7 @@ public class C45ItLevelPartiallyConsolidatedPruneableClassifierTree
 			setNumInternalNodesConso(numberLevelsConso);
 			System.out.println(
 					"Number of levels to leave as consolidated: " + numberLevelsConso + " of " + treeLevels);
-
-		} else // consolidationNumberHowToSet ==
-				// J48PartiallyConsolidated.ConsolidationNumber_Value
-		{
+		} else { // m_numberConsoNodesHowToSet == J48PartiallyConsolidated.NumberConsoNodes_Value
 			m_maximumCriteria = (int) consolidationPercent;
 			System.out.println("Number of levels to leave as consolidated: " + m_maximumCriteria);
 			m_elapsedTimeTrainingWholeCT = (double)0.0;

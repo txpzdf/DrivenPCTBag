@@ -143,57 +143,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	public void buildClassifier(Instances data, Instances[] samplesVector, float consolidationPercent) throws Exception {
 		long trainTimeStart = 0, trainTimeElapsed = 0;
 
-		if (m_numberConsoNodesHowToSet == J48PartiallyConsolidated.NumberConsoNodes_Percentage) {
-							
-			trainTimeStart = System.currentTimeMillis();
-			super.buildTree(data, samplesVector, m_subtreeRaising || !m_cleanup); // build the tree without restrictions
-							
-			if (m_collapseTheCTree) {
-				collapse();
-			}
-			if (m_pruneTheConsolidatedTree) {
-				prune();
-			}
-			trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
-			System.out.println("Time taken to build the whole consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
-			m_elapsedTimeTrainingWholeCT = trainTimeElapsed / (double)1000.0;
-
-			if (m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Levelbylevel) {
-
-				// Number of levels of the consolidated tree
-				int treeLevels = numLevels();
-
-				// Number of levels of the consolidated tree to leave as consolidated based on
-				// given consolidationPercent
-				int numberLevelsConso = (int) (((treeLevels * consolidationPercent) / 100) + 0.5);
-				m_maximumCriteria = numberLevelsConso;
-				setNumInternalNodesConso(numberLevelsConso);
-				System.out.println(
-						"Number of levels to leave as consolidated: " + numberLevelsConso + " of " + treeLevels);
-
-			} else {
-
-				// Number of internal nodes of the consolidated tree
-				int innerNodes = numNodes() - numLeaves();
-
-				// Number of nodes of the consolidated tree to leave as consolidated based on
-				// given consolidationPercent
-				int numberNodesConso = (int) (((innerNodes * consolidationPercent) / 100) + 0.5);
-				m_maximumCriteria = numberNodesConso;
-				setNumInternalNodesConso(numberNodesConso);
-				System.out.println(
-						"Number of nodes to leave as consolidated: " + numberNodesConso + " of " + innerNodes);
-
-			}
-
-		} else // consolidationNumberHowToSet ==
-				// J48PartiallyConsolidated.ConsolidationNumber_Value
-		{
-			m_maximumCriteria = (int) consolidationPercent;
-			System.out.println("Number of nodes or levels to leave as consolidated: " + m_maximumCriteria);
-			m_elapsedTimeTrainingWholeCT = (double)0.0;
-		}
-
+		setNumberNodesToBeConsolidated(data, samplesVector, consolidationPercent);
 		// buildTree
 		trainTimeStart = System.currentTimeMillis();
 		buildPartialTreeItera(data, samplesVector, m_subtreeRaising || !m_cleanup);
@@ -217,6 +167,65 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			cleanup(new Instances(data, 0));
 		if(!m_isLeaf)
 			computeNumberBaseTreesPreservingPartialCTStructure();
+	}
+
+	/**
+	 * Determines the number of nodes (or levels) of the partial tree to be developed 
+	 * based on a percentage value with respect to the number of inner nodes (or levels) 
+	 * of the whole consolidated tree (which must first be constructed) or based on a 
+	 * specific value (passed as a parameter).
+	 * 
+	 * @param data                 the data for pruning the consolidated tree
+	 * @param samplesVector        the vector of samples for building the
+	 *                             consolidated tree
+	 * @param consolidationPercent the value of consolidation percent
+	 * @throws Exception if something goes wrong
+	 */
+	public void setNumberNodesToBeConsolidated(Instances data, Instances[] samplesVector, float consolidationPercent) throws Exception {
+		if (m_numberConsoNodesHowToSet == J48PartiallyConsolidated.NumberConsoNodes_Percentage) {
+			long trainTimeStart = 0, trainTimeElapsed = 0;
+			
+			trainTimeStart = System.currentTimeMillis();
+			super.buildTree(data, samplesVector, m_subtreeRaising || !m_cleanup); // build the tree without restrictions
+							
+			if (m_collapseTheCTree) {
+				collapse();
+			}
+			if (m_pruneTheConsolidatedTree) {
+				prune();
+			}
+			trainTimeElapsed = System.currentTimeMillis() - trainTimeStart;
+			System.out.println("Time taken to build the whole consolidated tree: " + Utils.doubleToString(trainTimeElapsed / 1000.0, 2) + " seconds\n");
+			m_elapsedTimeTrainingWholeCT = trainTimeElapsed / (double)1000.0;
+
+			if (m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Levelbylevel) {
+				// Number of levels of the consolidated tree
+				int treeLevels = numLevels();
+
+				// Number of levels of the consolidated tree to leave as consolidated based on
+				// given consolidationPercent
+				int numberLevelsConso = (int) (((treeLevels * consolidationPercent) / 100) + 0.5);
+				m_maximumCriteria = numberLevelsConso;
+				setNumInternalNodesConso(numberLevelsConso);
+				System.out.println(
+						"Number of levels to leave as consolidated: " + numberLevelsConso + " of " + treeLevels);
+			} else {
+				// Number of internal nodes of the consolidated tree
+				int innerNodes = numNodes() - numLeaves();
+
+				// Number of nodes of the consolidated tree to leave as consolidated based on
+				// given consolidationPercent
+				int numberNodesConso = (int) (((innerNodes * consolidationPercent) / 100) + 0.5);
+				m_maximumCriteria = numberNodesConso;
+				setNumInternalNodesConso(numberNodesConso);
+				System.out.println(
+						"Number of nodes to leave as consolidated: " + numberNodesConso + " of " + innerNodes);
+			}
+		} else { // m_numberConsoNodesHowToSet == J48PartiallyConsolidated.NumberConsoNodes_Value
+			m_maximumCriteria = (int) consolidationPercent;
+			System.out.println("Number of nodes or levels to leave as consolidated: " + m_maximumCriteria);
+			m_elapsedTimeTrainingWholeCT = (double)0.0;
+		}
 	}
 
 	/**
