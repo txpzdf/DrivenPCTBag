@@ -40,13 +40,13 @@ public class C45PartiallyConsolidatedPruneableClassifierTree extends
 	 *  we know the total number of internal nodes of the complete consolidated tree. */
 	protected int m_numInternalNodesConso = -1;
 
-	/** Whether to prune the base trees without preserving the structure of the partially
-	 * consolidated tree. */
-	protected boolean m_pruneBaseTreesWithoutPreservingConsolidatedStructure = false;
-
 	/** Vector for storing the generated base decision trees
 	 *  related to each sample */
 	protected C45PruneableClassifierTreeExtended[] m_sampleTreeVector;
+
+	/** Whether to prune the base trees without preserving the structure of the partially
+	 * consolidated tree. */
+	protected boolean m_pruneWithoutPreservingConsolidatedStructure;
 
 	/**
 	 * Constructor for pruneable consolidated tree structure. Calls
@@ -66,7 +66,8 @@ public class C45PartiallyConsolidatedPruneableClassifierTree extends
 			ModelSelection toSelectLocModel, C45ModelSelectionExtended baseModelToForceDecision,
 			boolean pruneTree, float cf,
 			boolean raiseTree, boolean cleanup,
-			boolean collapseTree, int numberSamples) throws Exception {
+			boolean collapseTree, int numberSamples,
+			boolean notPreservingStructure) throws Exception {
 		super(toSelectLocModel, pruneTree, cf, raiseTree, cleanup, collapseTree);
 		// Initialize each base decision tree of the vector
 		ModelSelection modelToConsolidate = ((C45ConsolidatedModelSelection)toSelectLocModel).getModelToConsolidate();
@@ -74,7 +75,8 @@ public class C45PartiallyConsolidatedPruneableClassifierTree extends
 		for (int iSample = 0; iSample < numberSamples; iSample++)
 			m_sampleTreeVector[iSample] = new C45PruneableClassifierTreeExtended(
 					modelToConsolidate,	baseModelToForceDecision, pruneTree, cf, raiseTree, cleanup, collapseTree,
-					false);
+					notPreservingStructure);
+		m_pruneWithoutPreservingConsolidatedStructure = notPreservingStructure;
 	}
 
 	/**
@@ -225,7 +227,8 @@ public class C45PartiallyConsolidatedPruneableClassifierTree extends
 		C45ModelSelectionExtended baseModelToForceDecision = m_sampleTreeVector[0].getBaseModelToForceDecision();
 		C45PartiallyConsolidatedPruneableClassifierTree newTree =
 				new C45PartiallyConsolidatedPruneableClassifierTree(m_toSelectModel, baseModelToForceDecision,
-						m_pruneTheTree, m_CF, m_subtreeRaising, m_cleanup, m_collapseTheTree , samplesVector.length);
+						m_pruneTheTree, m_CF, m_subtreeRaising, m_cleanup, m_collapseTheTree , samplesVector.length,
+						m_pruneWithoutPreservingConsolidatedStructure);
 		/** Set the recent created base trees like the sons of the given parent node */
 		for (int iSample = 0; iSample < numberSamples; iSample++)
 			((C45PruneableClassifierTreeExtended)sampleTreeVectorParent[iSample]).setIthSon(iSon, newTree.m_sampleTreeVector[iSample]);

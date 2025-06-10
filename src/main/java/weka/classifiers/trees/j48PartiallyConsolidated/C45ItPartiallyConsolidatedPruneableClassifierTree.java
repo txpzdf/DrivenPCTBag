@@ -105,6 +105,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	 * @param heuristicSearchAlgorithm search algorithm to build the tree
 	 * @param pruneCT true if the CT tree is to be pruned
 	 * @param collapseCT true if the CT tree is to be collapsed
+	 * @param notPreservingStructure false if the base trees do not preserve the structure of the partial tree after pruning.
 	 * @throws Exception if something goes wrong
 	 */
 	public C45ItPartiallyConsolidatedPruneableClassifierTree(
@@ -117,7 +118,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 			boolean pruneCT, boolean collapseCT,
 			boolean notPreservingStructure) throws Exception {
 		super(toSelectLocModel, baseModelToForceDecision, pruneTree, cf, raiseTree, cleanup, collapseTree,
-				numberSamples);
+				numberSamples, notPreservingStructure);
 
 		m_numberConsoNodesHowToSet = numberConsoNodesHowToSet;
 		m_priorityCriteria = priorityCriteria;

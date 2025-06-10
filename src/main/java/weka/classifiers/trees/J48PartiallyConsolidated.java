@@ -36,6 +36,7 @@ import weka.classifiers.trees.j48.C45ModelSelection;
 import weka.classifiers.trees.j48.ClassifierTree;
 import weka.classifiers.trees.j48.ModelSelection;
 import weka.classifiers.trees.j48Consolidated.C45ConsolidatedModelSelection;
+import weka.classifiers.trees.j48PartiallyConsolidated.C45ItLevelPartiallyConsolidatedPruneableClassifierTree;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45ItPartiallyConsolidatedPruneableClassifierTree;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45ModelSelectionExtended;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45PartiallyConsolidatedPruneableClassifierTree;
@@ -435,7 +436,16 @@ public class J48PartiallyConsolidated
 					throw new Exception("It is not possible to indicate the number of nodes to be consolidated as a specific value, when priority criteria is equal to Original!");
 				localClassifier = new C45PartiallyConsolidatedPruneableClassifierTree(
 						modSelection, baseModelToForceDecision,
-						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length);
+						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length,
+						false);
+				break;
+			case PriorCrit_Levelbylevel:
+				localClassifier = new C45ItLevelPartiallyConsolidatedPruneableClassifierTree(
+						modSelection, baseModelToForceDecision,
+						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length,
+						m_PCTBconsolidationPercentHowToSet,
+						m_PCTBpriorityCriteria, m_PCTBheuristicSearchAlgorithm, !m_PCTBunprunedCT, m_PCTBcollapseCT,
+						m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure);
 				break;
 			default:
 				localClassifier = new C45ItPartiallyConsolidatedPruneableClassifierTree(
@@ -1358,7 +1368,7 @@ public class J48PartiallyConsolidated
 	 *
 	 * @return Value of PCTBconsolidationPercentHowToSet.
 	 */
-	public SelectedTag getPCTconsolidationPercentHowToSet() {
+	public SelectedTag getPCTBconsolidationPercentHowToSet() {
 		return new SelectedTag(m_PCTBconsolidationPercentHowToSet,
 				TAGS_WAYS_TO_SET_NUMBER_CONSOLIDATED_NODES);
 	}
@@ -1439,8 +1449,8 @@ public class J48PartiallyConsolidated
 	 */
 	public String PCTBheuristicSearchAlgorithmTipText() {
 		return "Way to set the heuristic search algorithm to be used with the priority criteria to build the partial consolidated tree:\n" +
-				" * Best-first (Original)\n" +
-				" * Hill Climbing (In-depth)\n";
+				" · Best-first (Original)\n" +
+				" · Hill Climbing (In-depth)\n";
 	}
 	
 	/**
