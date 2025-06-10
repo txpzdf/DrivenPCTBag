@@ -16,7 +16,8 @@ import weka.core.Instances;
 import weka.core.Utils;
 
 /**
- * Class for handling a consolidated tree structure that can
+ * Class for handling a 'partial' consolidated tree structure
+ * (based on a consolidation percentage) that can
  * be pruned using C4.5 procedures.
  * *************************************************************************************
  * Attention! Removed 'final' modifier from collapse() function of j48/C45PruneableClassifierTree
@@ -26,7 +27,7 @@ import weka.core.Utils;
  *
  * @author Ander Otsoa de Alda Alzaga (ander.otsoadealda@gmail.com)
  * @author Jesús M. Pérez (txus.perez@ehu.eus)
- * @version $Revision: 0.3 $
+ * @version $Revision: 1.0 $
  */
 public class C45PartiallyConsolidatedPruneableClassifierTree extends
 		C45ConsolidatedPruneableClassifierTree {
@@ -77,7 +78,7 @@ public class C45PartiallyConsolidatedPruneableClassifierTree extends
 	}
 
 	/**
-	 * Method for building a pruneable classifier consolidated tree.
+	 * Method for building a pruneable classifier partial consolidated tree.
 	 *
 	 * @param data the data for pruning the consolidated tree
 	 * @param samplesVector the vector of samples for building the consolidated tree
@@ -418,18 +419,15 @@ public class C45PartiallyConsolidatedPruneableClassifierTree extends
 	 * 
 	 * @return the number of levels
 	 */
-
 	public int numLevels() {
-		if (m_isLeaf) {
+		if (m_isLeaf)
 			return 0;
-		} else {
+		else {
 			int maxLevels = -1;
 			for (int i = 0; i < m_sons.length; i++) {
 				int nl = ((C45PartiallyConsolidatedPruneableClassifierTree) m_sons[i]).numLevels();
-				if (nl > maxLevels) {
+				if (nl > maxLevels)
 					maxLevels = nl;
-
-				}
 			}
 			return 1 + maxLevels;
 		}
