@@ -10,10 +10,10 @@ import weka.core.Utils;
 /**
  * Class for handling a 'partial' consolidated tree structure,
  * based on a consolidation percentage or on a specific value,
- * that indicate the number of levels of the tree to be developed. 
+ * that indicates the number of levels of the tree to be developed. 
  * The tree is processed iteratively (instead of recursively like 
  * the original version).
- * (m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Levelbylevel)
+ * (m_priorityCriteria == PriorCrit_Levelbylevel)
  * 
  * @author Jesús M. Pérez (txus.perez@ehu.eus)
  * @author Josué Cabezas Regoyo
@@ -85,6 +85,7 @@ public class C45ItLevelPartiallyConsolidatedPruneableClassifierTree
 	/**
 	 * Builds the partial consolidated tree structure, in this case
 	 * iteratively (instead of recursively as in the original method, buildTree()).
+	 * (m_priorityCriteria == PriorCrit_Levelbylevel)
 	 *
 	 * @param data          the data for pruning the consolidated tree
 	 * @param samplesVector the vector of samples used for consolidation
@@ -92,8 +93,12 @@ public class C45ItLevelPartiallyConsolidatedPruneableClassifierTree
 	 * @throws Exception if something goes wrong
 	 */
 	public void buildPartialTreeItera(Instances data, Instances[] samplesVector, boolean keepData) throws Exception {
-		/** Number of Samples. */
 		int numberSamples = samplesVector.length;
+		Instances currentData;
+		Instances[] currentSamplesVector;
+		C45ItPartiallyConsolidatedPruneableClassifierTree currentTree;
+		int currentLevel;
+		int index = 0;
 
 		/** Initialize the consolidated tree */
 		initiliazeTree(data, keepData);
@@ -101,28 +106,23 @@ public class C45ItLevelPartiallyConsolidatedPruneableClassifierTree
 		for (int iSample = 0; iSample < numberSamples; iSample++)
 			m_sampleTreeVector[iSample].initiliazeTree(samplesVector[iSample], keepData);
 
+		/** List of nodes to be processed */
 		ArrayList<Object[]> list = new ArrayList<>();
 
 		// add(Data, samplesVector, tree, orderValue, currentLevel)
 		list.add(new Object[] { data, samplesVector, this, null, 0 }); // The parent node is considered level 0
 
-		int index = 0;
-
 		while (list.size() > 0) {
 
 			Object[] current = list.get(0);
-
-			/** Current node level. **/
-			int currentLevel = (int) current[4];
-
-			/** Number of Samples. */
-			Instances[] currentSamplesVector = (Instances[]) current[1];
-
 			list.set(0, null); // Null to free up memory
 			list.remove(0);
 
-			Instances currentData = (Instances) current[0];
-			C45ItPartiallyConsolidatedPruneableClassifierTree currentTree = (C45ItLevelPartiallyConsolidatedPruneableClassifierTree) current[2];
+			currentData = (Instances)current[0];
+			currentSamplesVector = (Instances[])current[1];
+			currentTree = (C45ItLevelPartiallyConsolidatedPruneableClassifierTree)current[2];
+			currentLevel = (int)current[4];
+
 			currentTree.m_order = index;
 
 			/** Initialize the consolidated tree */
@@ -200,8 +200,7 @@ public class C45ItLevelPartiallyConsolidatedPruneableClassifierTree
 						((C45PruneableClassifierTreeExtended) currentTree.m_sampleTreeVector[iSample]).setIthSon(iSon,
 								newTree.m_sampleTreeVector[iSample]);
 
-					listSons.add(new Object[] { localInstances[iSon], localSamplesVector, newTree, 0,
-							currentLevel + 1 });
+					listSons.add(new Object[]{localInstances[iSon], localSamplesVector, newTree, null, currentLevel+1});
 
 					currentTree.setIthSon(iSon, newTree);
 

@@ -226,8 +226,13 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 	 * @throws Exception if something goes wrong
 	 */
 	public void buildPartialTreeItera(Instances data, Instances[] samplesVector, boolean keepData) throws Exception {
-		/** Number of Samples. */
 		int numberSamples = samplesVector.length;
+		Instances currentData;
+		Instances[] currentSamplesVector;
+		C45ItPartiallyConsolidatedPruneableClassifierTree currentTree;
+		int index = 0;
+		double orderValue;
+		int internalNodes = 0;
 
 		/** Initialize the consolidated tree */
 		initiliazeTree(data, keepData);
@@ -235,28 +240,22 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 		for (int iSample = 0; iSample < numberSamples; iSample++)
 			m_sampleTreeVector[iSample].initiliazeTree(samplesVector[iSample], keepData);
 
+		/** List of nodes to be processed */
 		ArrayList<Object[]> list = new ArrayList<>();
 
 		// add(Data, samplesVector, tree, orderValue)
-		list.add(new Object[] { data, samplesVector, this, null }); // The parent node is considered level 0
-
-		int index = 0;
-		double orderValue;
-
-		int internalNodes = 0;
+		list.add(new Object[]{data, samplesVector, this, null}); // The parent node is considered level 0
 
 		while (list.size() > 0) {
 
 			Object[] current = list.get(0);
-
-			/** Number of Samples. */
-			Instances[] currentSamplesVector = (Instances[]) current[1];
-
 			list.set(0, null); // Null to free up memory
 			list.remove(0);
 
-			Instances currentData = (Instances) current[0];
-			C45ItPartiallyConsolidatedPruneableClassifierTree currentTree = (C45ItPartiallyConsolidatedPruneableClassifierTree) current[2];
+			currentData = (Instances)current[0];
+			currentSamplesVector = (Instances[])current[1];
+			currentTree = (C45ItPartiallyConsolidatedPruneableClassifierTree)current[2];
+
 			currentTree.m_order = index;
 
 			/** Initialize the consolidated tree */
@@ -339,7 +338,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 
 						orderValue = currentTree.getLocalModel().distribution().perBag(iSon);
 
-						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue};
+						Object[] son = new Object[]{localInstances[iSon], localSamplesVector, newTree, orderValue};
 						if (m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_BestFirst)
 							addSonOrderedByValue(list, son);
 						else
@@ -369,13 +368,13 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 						else
 							orderValue = (double) Double.MIN_VALUE;
 						
-						Object[] son = new Object[] { localInstances[iSon], localSamplesVector, newTree, orderValue};
+						Object[] son = new Object[]{localInstances[iSon], localSamplesVector, newTree, orderValue};
 						if (m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_BestFirst)
 							addSonOrderedByValue(list, son);
 						else
 							addSonOrderedByValue(listSons, son);
 					} else
-						listSons.add(new Object[] { localInstances[iSon], localSamplesVector, newTree, 0});
+						listSons.add(new Object[]{localInstances[iSon], localSamplesVector, newTree, null});
 
 					currentTree.setIthSon(iSon, newTree);
 
