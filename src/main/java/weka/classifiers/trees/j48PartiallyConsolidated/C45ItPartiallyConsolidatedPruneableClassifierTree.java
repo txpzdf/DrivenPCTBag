@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import weka.classifiers.trees.j48Consolidated.C45ConsolidatedModelSelection;
 import weka.classifiers.trees.J48PartiallyConsolidated;
 import weka.classifiers.trees.j48.C45Split;
-import weka.classifiers.trees.j48.ClassifierSplitModel;
 import weka.classifiers.trees.j48.ClassifierTree;
 import weka.classifiers.trees.j48.ModelSelection;
 import weka.core.Instances;
@@ -231,9 +230,11 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 		Instances[] currentSamplesVector;
 		C45ItPartiallyConsolidatedPruneableClassifierTree currentTree;
 		int index = 0;
-		double orderValue;
 		int internalNodes = 0;
 
+		if (m_priorityCriteria != J48PartiallyConsolidated.PriorCrit_Preorder)
+			throw new Exception("The priority criteria can only be 'Pre-order' in this function!");
+		
 		/** Initialize the consolidated tree */
 		initiliazeTree(data, keepData);
 		/** Initialize the base trees */
@@ -244,7 +245,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 		ArrayList<Object[]> list = new ArrayList<>();
 
 		// add(Data, samplesVector, tree, orderValue)
-		list.add(new Object[]{data, samplesVector, this, null}); // The parent node is considered level 0
+		list.add(new Object[]{data, samplesVector, this, null});
 
 		while (list.size() > 0) {
 
@@ -333,49 +334,15 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 						((C45PruneableClassifierTreeExtended) currentTree.m_sampleTreeVector[iSample]).setIthSon(iSon,
 								newTree.m_sampleTreeVector[iSample]);
 
-					if ((m_priorityCriteria >= J48PartiallyConsolidated.PriorCrit_GainratioWholeData) &&
-								(m_priorityCriteria <= J48PartiallyConsolidated.PriorCrit_GainratioSetSamples_Size)) // Added by gainratio,
-																							// largest to smallest
-					{
-						ClassifierSplitModel sonModel;
-						if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData) ||
-								(m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData_Size))
-							sonModel = newTree.getToSelectModel().
-									selectModel(localInstances[iSon]);
-						else
-							sonModel = ((C45ConsolidatedModelSelection)newTree.getToSelectModel()).
-									selectModel(localInstances[iSon], localSamplesVector);
-
-						if (sonModel.numSubsets() > 1) {
-							orderValue = ((C45Split) sonModel).gainRatio();
-							if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData_Size) ||
-									(m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioSetSamples_Size)) {
-								double size = currentTree.getLocalModel().distribution().perBag(iSon);
-								orderValue = orderValue * size;
-							}
-						}
-						else
-							orderValue = (double) Double.MIN_VALUE;
-						
-						Object[] son = new Object[]{localInstances[iSon], localSamplesVector, newTree, orderValue};
-						if (m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_BestFirst)
-							addSonOrderedByValue(list, son);
-						else
-							addSonOrderedByValue(listSons, son);
-					} else
-						listSons.add(new Object[]{localInstances[iSon], localSamplesVector, newTree, null});
+					listSons.add(new Object[]{localInstances[iSon], localSamplesVector, newTree, null});
 
 					currentTree.setIthSon(iSon, newTree);
 
 					localInstances[iSon] = null;
 					localSamplesVector = null;
 				}
-
-				if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Preorder) ||
-					(m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_HillClimbing)) {
-					listSons.addAll(list);
-					list = listSons;
-				}
+				listSons.addAll(list);
+				list = listSons;
 
 				localInstances = null;
 				localInstancesVector.clear();

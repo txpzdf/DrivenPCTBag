@@ -3,7 +3,10 @@ package weka.classifiers.trees.j48PartiallyConsolidated;
 import java.util.ArrayList;
 
 import weka.classifiers.trees.J48PartiallyConsolidated;
+import weka.classifiers.trees.j48.C45Split;
+import weka.classifiers.trees.j48.ClassifierSplitModel;
 import weka.classifiers.trees.j48.ModelSelection;
+import weka.classifiers.trees.j48Consolidated.C45ConsolidatedModelSelection;
 import weka.core.Instances;
 import weka.core.Utils;
 
@@ -14,19 +17,31 @@ import weka.core.Utils;
  * The tree is processed iteratively (instead of recursively like 
  * the original version) and allows to decide which will be the 
  * next node to be developed according to a priority criterion;
- * in this case the size of the node, i.e. the number of instances.
- * (m_priorityCriteria == PriorCrit_Size) // Added by size, largest to smallest
+ * in this case the gain ratio, the same criterion (split function) 
+ * used by the C4.5 algorithm (J48) to choose the best attribute to 
+ * split the node.
+ * Up to 4 variants have been implemented:
+ * 1) Gain ratio value associated with the training sample data at the current node.
+ *  (m_priorityCriteria == PriorCrit_GainratioWholeData)
+ * 2) Gain ratio value associated to the data of the vector of samples used in the 
+ *  consolidated tree by calculating the mean of the contingency tables (distributions) 
+ *  associated to each sample.
+ *  (m_priorityCriteria == PriorCrit_GainratioSetSamples)
+ * 3) Gain ratio (Whole data) multiplied by the node size.
+ *  (m_priorityCriteria == PriorCrit_GainratioWholeData_Size)
+ * 4) Gain ratio (Set of samples) multiplied by the node size.
+ *  (m_priorityCriteria == PriorCrit_GainratioSetSamples_Size)
  *
  * @author Jesús M. Pérez (txus.perez@ehu.eus)
  * @author Josué Cabezas Regoyo
  * @version $Revision: 1.0 $
  */
-public class C45ItSizePartiallyConsolidatedPruneableClassifierTree
+public class C45ItGainPartiallyConsolidatedPruneableClassifierTree
 		extends C45ItPartiallyConsolidatedPruneableClassifierTree {
 
-	private static final long serialVersionUID = 1457575306171189567L;
+	private static final long serialVersionUID = -7182722875887777854L;
 
-	public C45ItSizePartiallyConsolidatedPruneableClassifierTree(ModelSelection toSelectLocModel,
+	public C45ItGainPartiallyConsolidatedPruneableClassifierTree(ModelSelection toSelectLocModel,
 			C45ModelSelectionExtended baseModelToForceDecision, boolean pruneTree, float cf, boolean raiseTree,
 			boolean cleanup, boolean collapseTree, int numberSamples, int numberConsoNodesHowToSet,
 			int priorityCriteria, int heuristicSearchAlgorithm, boolean pruneCT, boolean collapseCT,
@@ -39,7 +54,10 @@ public class C45ItSizePartiallyConsolidatedPruneableClassifierTree
 	/**
 	 * Builds the partial consolidated tree structure, in this case
 	 * iteratively (instead of recursively as in the original method, buildTree()).
-	 * (m_priorityCriteria == PriorCrit_Size) // Added by size, largest to smallest
+	 * (m_priorityCriteria == PriorCrit_GainratioWholeData)
+	 * (m_priorityCriteria == PriorCrit_GainratioSetSamples)
+	 * (m_priorityCriteria == PriorCrit_GainratioWholeData_Size)
+	 * (m_priorityCriteria == PriorCrit_GainratioSetSamples_Size)
 	 *
 	 * @param data          the data for pruning the consolidated tree
 	 * @param samplesVector the vector of samples used for consolidation
@@ -153,13 +171,32 @@ public class C45ItSizePartiallyConsolidatedPruneableClassifierTree
 						((C45PruneableClassifierTreeExtended) currentTree.m_sampleTreeVector[iSample]).setIthSon(iSon,
 								newTree.m_sampleTreeVector[iSample]);
 
-					orderValue = currentTree.getLocalModel().distribution().perBag(iSon);
+					ClassifierSplitModel sonModel;
+					if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData) ||
+							(m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData_Size))
+						sonModel = newTree.getToSelectModel().
+								selectModel(localInstances[iSon]);
+					else
+						sonModel = ((C45ConsolidatedModelSelection)newTree.getToSelectModel()).
+								selectModel(localInstances[iSon], localSamplesVector);
 
+					if (sonModel.numSubsets() > 1) {
+						orderValue = ((C45Split) sonModel).gainRatio();
+						if ((m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioWholeData_Size) ||
+								(m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_GainratioSetSamples_Size)) {
+							double size = currentTree.getLocalModel().distribution().perBag(iSon);
+							orderValue = orderValue * size;
+						}
+					}
+					else
+						orderValue = (double) Double.MIN_VALUE;
+					
 					Object[] son = new Object[]{localInstances[iSon], localSamplesVector, newTree, orderValue};
 					if (m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_HillClimbing)
 						addSonOrderedByValue(listSons, son);
 					else // SearchAlg_BestFirst
 						addSonOrderedByValue(list, son);
+
 					currentTree.setIthSon(iSon, newTree);
 
 					localInstances[iSon] = null;
