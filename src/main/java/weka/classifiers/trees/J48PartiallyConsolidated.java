@@ -38,6 +38,7 @@ import weka.classifiers.trees.j48.ModelSelection;
 import weka.classifiers.trees.j48Consolidated.C45ConsolidatedModelSelection;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45ItLevelPartiallyConsolidatedPruneableClassifierTree;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45ItPartiallyConsolidatedPruneableClassifierTree;
+import weka.classifiers.trees.j48PartiallyConsolidated.C45ItSizePartiallyConsolidatedPruneableClassifierTree;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45ModelSelectionExtended;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45PartiallyConsolidatedPruneableClassifierTree;
 import weka.core.AdditionalMeasureProducer;
@@ -441,6 +442,14 @@ public class J48PartiallyConsolidated
 				break;
 			case PriorCrit_Levelbylevel:
 				localClassifier = new C45ItLevelPartiallyConsolidatedPruneableClassifierTree(
+						modSelection, baseModelToForceDecision,
+						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length,
+						m_PCTBconsolidationPercentHowToSet,
+						m_PCTBpriorityCriteria, m_PCTBheuristicSearchAlgorithm, !m_PCTBunprunedCT, m_PCTBcollapseCT,
+						m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure);
+				break;
+			case PriorCrit_Size:
+				localClassifier = new C45ItSizePartiallyConsolidatedPruneableClassifierTree(
 						modSelection, baseModelToForceDecision,
 						!m_unpruned, m_CF, m_subtreeRaising, !m_noCleanup, m_collapseTree, samplesVector.length,
 						m_PCTBconsolidationPercentHowToSet,

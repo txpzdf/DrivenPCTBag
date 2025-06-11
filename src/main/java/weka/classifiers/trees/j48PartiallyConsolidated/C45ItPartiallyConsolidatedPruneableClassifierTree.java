@@ -333,18 +333,7 @@ public class C45ItPartiallyConsolidatedPruneableClassifierTree extends C45Partia
 						((C45PruneableClassifierTreeExtended) currentTree.m_sampleTreeVector[iSample]).setIthSon(iSon,
 								newTree.m_sampleTreeVector[iSample]);
 
-					if (m_priorityCriteria == J48PartiallyConsolidated.PriorCrit_Size) // Added by size, largest to smallest
-					{
-
-						orderValue = currentTree.getLocalModel().distribution().perBag(iSon);
-
-						Object[] son = new Object[]{localInstances[iSon], localSamplesVector, newTree, orderValue};
-						if (m_heuristicSearchAlgorithm == J48PartiallyConsolidated.SearchAlg_BestFirst)
-							addSonOrderedByValue(list, son);
-						else
-							addSonOrderedByValue(listSons, son);
-
-					} else if ((m_priorityCriteria >= J48PartiallyConsolidated.PriorCrit_GainratioWholeData) &&
+					if ((m_priorityCriteria >= J48PartiallyConsolidated.PriorCrit_GainratioWholeData) &&
 								(m_priorityCriteria <= J48PartiallyConsolidated.PriorCrit_GainratioSetSamples_Size)) // Added by gainratio,
 																							// largest to smallest
 					{
