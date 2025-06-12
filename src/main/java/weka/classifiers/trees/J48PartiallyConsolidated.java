@@ -16,7 +16,7 @@
 
 /*
  *    PartiallyConsolidatedTreeBagging.java
- *    Copyright (C) 2021 ALDAPA Team (http://www.aldapa.eus)
+ *    Copyright (C) 2025 ALDAPA Team (http://www.aldapa.eus)
  *    Faculty of Informatics, Donostia, 20018
  *    University of the Basque Country (UPV/EHU), Basque Country
  *
@@ -181,26 +181,59 @@ import weka.core.TechnicalInformation.Type;
  * 
  * Options to leave partially consolidated the built consolidated tree (PCTB)
  * ============================================================================ 
- * <pre> -PCTB-C consolidation percent <br>
- * Determines the number of inner nodes to leave as consolidated as a percent 
- * according to the inner nodes of the whole consolidated tree.  
- * (Default: 20.0)<pre>
- * 
- * <pre> -PCTB-V mode <br>
- * Determines how many base trees will be shown:
- *  None, only the first ten (if they exist) or all.  
- * (Default: only the first ten)<pre>
- * 
- * <pre> -PCTB-P<br>
- * Determines whether to show the explanation aggregated measures of the all decision trees
- *  that compose the final classifier (MCS).  
- * (Default: false)<pre>
- * 
- * <pre> -PCTB-WP<br>
- * Determines whether to prune the base trees without preserving the structure of
- * the partially consolidated tree. 
- * (Default: false)<pre>
- * 
+	 * <pre>-PCTB-C consolidation percent <br>
+	 * Determines the number of inner nodes to leave as consolidated as a percent 
+	 * according to the inner nodes of the whole consolidated tree (If -PCTB-BP appears(by default).
+	 * If -PCTB-BP does not appear, it directly determines the number of internal nodes to be developed
+	 * as a specific value.    
+	 * (Default: 20.0)<pre>
+	 *
+	 * <pre>-PCTB-BP<br>
+	 * Set the way to set the number of inner nodes to be developed from the partial 
+	 * consolidated tree based on a percentage value with regard to the number of nodes 
+	 * in the whole consolidated tree (instead of using a concrete value).
+	 * (Default: true)<pre>
+	 * 
+	 * <pre>-PCTB-PC criteria<br>
+	 * Indicates the criteria used when choosing the next node to be developed in the construction
+	 * of the partial consolidated tree:
+	 *  · 0: Original (recursive)
+	 *  · 1: Level by level
+	 *  · 2: Node by node - Pre-order
+	 *  · 3: Node by node - Size
+	 *  · 4: Node by node - Gain ratio (Whole data)
+	 *  · 5: Node by node - Gain ratio (Set of samples)
+	 *  · 6: Node by node - Gain ratio (Whole data) x Size
+	 *  · 7: Node by node - Gain ratio (Set of samples) x Size
+	 * (Default: Size)<pre>
+	 * 
+	 * <pre>-PCTB-HC<br>
+	 * Build the partial tree ordered by a criteria using Hill Climbing (instead of Best-first).
+	 * (Default: true)<pre>
+	 *
+	 * <pre>-PCTB-CU <br>
+	 * Use unpruned partial Consolidated Tree (CT).
+	 * (Default: true)<pre>
+	 * 
+	 * <pre>-PCTB-CC <br>
+	 * Collapse the partial Consolidated Tree (CT).
+	 * (Default: true)<pre>
+	 * 
+	 * <pre>-PCTB-WP<br>
+	 * Determines whether to prune the base trees without preserving the structure of
+	 * the partially consolidated tree (or not). 
+	 * (Default: false)<pre>
+	 * 
+	 * <pre>-PCTB-V mode
+	 * Determines how many base trees will be shown:
+	 *  None, only the first ten (if they exist) or all.  
+	 * (Default: only the first ten)<pre>
+	 * 
+	 * <pre>-PCTB-P<br>
+	 * Determines whether to show the explanation aggregated measures of the all decision trees
+	 *  that compose the final classifier (MCS).  
+	 * (Default: false)<pre>
+	 *  
 <!-- options-end -->
  *
  * @author Jesús M. Pérez (txus.perez@ehu.eus)
@@ -1156,7 +1189,7 @@ public class J48PartiallyConsolidated
 	 * @return elapsed time
 	 */
 	public double measureElapsedTimeTrainingWholeCT() {
-		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingWholeCT();
+		return ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingWholeCT();
 	}
 	
 	/**
@@ -1166,7 +1199,7 @@ public class J48PartiallyConsolidated
 	 * @return elapsed time
 	 */
 	public double measureElapsedTimeTrainingPartialCT() {
-		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingPartialCT();
+		return ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingPartialCT();
 	}
 
 	/**
@@ -1176,7 +1209,7 @@ public class J48PartiallyConsolidated
 	 * @return elapsed time
 	 */
 	public double measureElapsedTimeTrainingAssocBagging() {
-		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingAssocBagging();
+		return ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getElapsedTimeTrainingAssocBagging();
 	}
 
 	/**
@@ -1185,7 +1218,7 @@ public class J48PartiallyConsolidated
 	 * @return average percentage
 	 */
 	public double measureAvgPercBaseTreesPreservingStructure() {
-		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getAvgPercBaseTreesPreservingStructure();
+		return ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getAvgPercBaseTreesPreservingStructure();
 	}
 
 	/**
@@ -1194,7 +1227,7 @@ public class J48PartiallyConsolidated
 	 * @return minimum percentage
 	 */
 	public double measureMinPercBaseTreesPreservingStructure() {
-		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getMinPercBaseTreesPreservingStructure();
+		return ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getMinPercBaseTreesPreservingStructure();
 	}
 
 	/**
@@ -1203,7 +1236,7 @@ public class J48PartiallyConsolidated
 	 * @return maximum percentage
 	 */
 	public double measureMaxPercBaseTreesPreservingStructure() {
-		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getMaxPercBaseTreesPreservingStructure();
+		return ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getMaxPercBaseTreesPreservingStructure();
 	}
 
 	/**
@@ -1212,7 +1245,7 @@ public class J48PartiallyConsolidated
 	 * @return median percentage
 	 */
 	public double measureMdnPercBaseTreesPreservingStructure() {
-		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getMdnPercBaseTreesPreservingStructure();
+		return ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getMdnPercBaseTreesPreservingStructure();
 	}
 
 	/**
@@ -1221,7 +1254,7 @@ public class J48PartiallyConsolidated
 	 * @return std deviation percentage
 	 */
 	public double measureDevPercBaseTreesPreservingStructure() {
-		return ((C45ItPartiallyConsolidatedPruneableClassifierTree)m_root).getDevPercBaseTreesPreservingStructure();
+		return ((C45PartiallyConsolidatedPruneableClassifierTree)m_root).getDevPercBaseTreesPreservingStructure();
 	}
 
 	/**

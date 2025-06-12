@@ -25,8 +25,8 @@ import weka.core.Utils;
  *  these functions here.
  * *************************************************************************************<br/>
  *
- * @author Ander Otsoa de Alda Alzaga (ander.otsoadealda@gmail.com)
  * @author Jesús M. Pérez (txus.perez@ehu.eus)
+ * @author Ander Otsoa de Alda Alzaga (ander.otsoadealda@gmail.com)
  * @version $Revision: 1.0 $
  */
 public class C45PartiallyConsolidatedPruneableClassifierTree extends
@@ -434,5 +434,69 @@ public class C45PartiallyConsolidatedPruneableClassifierTree extends
 			}
 			return 1 + maxLevels;
 		}
+	}
+
+	/**
+	 * @return the m_elapsedTimeTrainingWholeCT
+	 * Option not implemented for the original version of PCTBagging
+	 */
+	public double getElapsedTimeTrainingWholeCT() {
+		return (double)Double.NaN;
+	}
+
+	/**
+	 * @return the m_elapsedTimeTrainingPartialCT
+	 * Option not implemented for the original version of PCTBagging
+	 */
+	public double getElapsedTimeTrainingPartialCT() {
+		return (double)Double.NaN;
+	}
+
+	/**
+	 * @return the m_elapsedTimeTrainingAssocBagging
+	 * Option not implemented for the original version of PCTBagging
+	 */
+	public double getElapsedTimeTrainingAssocBagging() {
+		return (double)Double.NaN;
+	}
+	
+	/**
+	 * @return the m_avgPercBaseTreesPreservingStructure
+	 * Option not implemented for the original version of PCTBagging
+	 */
+	public double getAvgPercBaseTreesPreservingStructure() {
+		return (double)Double.NaN;
+	}
+
+	/**
+	 * @return the m_minPercBaseTreesPreservingStructure
+	 * Option not implemented for the original version of PCTBagging
+	 */
+	public double getMinPercBaseTreesPreservingStructure() {
+		return (double)Double.NaN;
+	}
+
+	/**
+	 * @return the m_maxPercBaseTreesPreservingStructure
+	 * Option not implemented for the original version of PCTBagging
+	 */
+	public double getMaxPercBaseTreesPreservingStructure() {
+		return (double)Double.NaN;
+	}
+
+	/**
+	 * @return the m_mdnPercBaseTreesPreservingStructure
+	 * Option not implemented for the original version of PCTBagging
+	 */
+	public double getMdnPercBaseTreesPreservingStructure() {
+		return (double)Double.NaN;
+	}
+
+	/**
+	 * @return the m_devPercBaseTreesPreservingStructure
+	 * Option not implemented for the original version of PCTBagging
+	 */
+	public double getDevPercBaseTreesPreservingStructure() {
+		return (double)Double.NaN;
 	}
 }
