@@ -63,24 +63,106 @@ import weka.core.TechnicalInformation.Type;
 <!-- globalinfo-start -->
  * Class for generating a Partially Consolidated Tree-Bagging (PCTBagging) multiple classifier.<br/>
  * Allows building a classifier between a single consolidated tree (100%), based on J48Consolidated,
- * and a bagging (0%), according to the given consolidation percent. First, a partially consolidated
- * tree is built based on a set of samples, and then, a standard J48 decision tree is developed from
- * the leaves of the tree related to each sample, as Bagging does.<p/>
+ * and a bagging (0%), according to the given consolidation percent. The objective is to build a classifier
+ * with high discriminative capability, such as Multiple Classifier Systems (MCS), in this case Bagging,
+ * while preserving interpretability through the consolidated partial tree generated in the initial phase.<p/>
+ * 
+ * Originally, the only parameter in PCTBagging was the consolidation percentage, defining the proportion 
+ * of internal nodes to retain from the whole consolidated tree relative to its total node count. The process
+ * was as follows: First, the complete consolidated tree is built, and its internal nodes are counted. 
+ * The exact number of nodes to preserve is then derived from the consolidation percentage. Starting at the root, 
+ * the algorithm iteratively selects the largest nodes (by instance count) from the available nodes in the 
+ * current subtree, ensuring top-down hierarchical integrity. All non-selected nodes are then collapsed, 
+ * yielding a partially retained consolidated tree, which will provide the interpretable component of the 
+ * final classifier. From this point onward, all trees associated with the sample set are developed 
+ * independently, following the standard Bagging procedure.<p/>
+ * 
+ * In this revised version of PCTBagging, we focused on practical improvements to the algorithm's implementation.
+ * Specifically, we enabled users to directly specify the exact number of internal nodes to retain in the 
+ * partially consolidated tree. Unlike the original approach (which required full tree construction before 
+ * node selection) the enhanced implementation terminates the consolidation process immediately when the 
+ * target node count is reached. This significantly reduces classifier construction time, particularly since 
+ * the requested number of explanatory internal nodes (which form the interpretable component) is typically very low.
+ * However, we have kept the possibility to indicate the number of consolidated nodes of the partial tree relative 
+ * to the final size of the fully developed tree, as a percentage, and let the user decide how to specify it through 
+ * a parameter.<p/>
+ * 
+ * This iterative (non-recursive) implementation introduces a predefined node-selection criterion as a configurable 
+ * parameter. While the original approach used node size (Size), this version allows specifying one of seven possible 
+ * criteria (including Size) prior to execution. The chosen criterion guides the order in which nodes are expanded 
+ * during partial tree construction, directly influencing both the tree's final structure and, consequently, the 
+ * classifier's explanatory capacity and discriminative performance. The text-mode tree display in Weka Explorer
+ * now annotates each internal node with its development sequence number (e.g., [3]), indicating the exact order 
+ * in which the node was expanded during partial consolidated tree construction, as determined by the active selection 
+ * criterion.<p/>
+ *  
+ * For non-topological criteria (Size, Gain Ratio variants), users may select one of two heuristic search algorithms 
+ * via a dedicated parameter:<p/>
+ * · Best-first: Evaluates all remaining expandable nodes at each step, selecting the globally optimal candidate based 
+ *   on the chosen metric (the one used in the original version to choose the nodes to keep in the partial tree.)<p/>
+ * · Hill climbing: Restricts selection to the immediate child nodes of the most recently expanded node, prioritizing 
+ *   depth-first progression.<p/>
+ *   
+ * We introduce a new pruning parameter, pruneBaseTreesWithoutPreservingConsolidatedStructure, which modifies the 
+ * treatment of Bagging-associated trees after partial consolidated tree construction. When enabled, base trees are 
+ * pruned independently from their roots without structural alignment to the consolidated tree (unlike the original 
+ * approach where pruning preserved the consolidated structure). In addition, it counts how many base trees in the 
+ * final Bagging set retained that node during independent pruning, and then calculates the percentage it represents 
+ * of the total set size (e.g. [Str: 75%]). These annotations appear in the text-mode representation of the tree in 
+ * the ‘Classifier output’ panel of Weka Explorer.<p/>
+ * 
+ * Finally, to enable comprehensive evaluation of the enhanced PCTBagging algorithm, we have implemented four 
+ * categories of performance measures in WEKA's Experimenter: timing diagnostics, tree structure analysis, ensemble 
+ * aggregation statistics, and structure preservation metrics.<p/>
+ * 
+ * Timing Measures: The implementation extends WEKA’s default Elapsed_Time_training with four specialized measures 
+ * to profile runtime components: elapsedTimeResampling (inherited from J48Consolidated) captures data sampling 
+ * overhead; ElapsedTimeTrainingWholeCT records full consolidated tree construction (used in percentage-based mode); 
+ * ElapsedTimeTrainingPartialCT tracks partial consolidated tree building; and ElapsedTimeTrainingAssocBagging measures
+ * the time to generate all Bagging-associated base trees.<p/>
+ * 
+ * Tree Structure Measures (Explainability Quantification): Beyond standard J48 metrics (TreeSize, NumLeaves), three 
+ * new measures quantify explainability: NumInnerNodes counts decision nodes (direct explanatory components); 
+ * ExplanationLength computes average root-to-leaf path length; and WeightedExplanationLength adjusts this by leaf 
+ * instance counts. These evaluate the trade-off between model complexity and human interpretability in the partial 
+ * consolidated tree.<p/>
+ * 
+ * Base Tree Ensemble Aggregates: For each structural measure (e.g., ExplanationLength), six aggregation statistics 
+ * are computed across all Bagging-associated base trees: mean (Avg), median (Mdn), minimum (Min), maximum (Max), 
+ * sum (Sum), and standard deviation (Dev). The 30 resulting metrics (e.g., measureAvgExplanationLength) characterize 
+ * ensemble-wide behavior, enabling comparisons of stability and diversity.<p/>
+ * 
+ * Structure Preservation Measures: When pruneBaseTreesWithoutPreservingConsolidatedStructure is enabled, node-level 
+ * retention rates ([Str: p%]) are aggregated into five global metrics: measureAvg/Mdn/Min/Max/DevPercBaseTreesPreservingStructure.
+ * These indicate how consistently base trees adhere to the explanatory tree’s structure.<p/>
+ * 
  * For more information, see:<p/>
+ * Jes&uacute;s M. P&eacute;rez and Olatz Arbelaitz.  
+ * "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning". Information Sciences (2025), submitted.
+ * <a href="https://doi.org/10.1016/j.ins.2025.XX.XXX" target="_blank">doi:10.1016/j.ins.2025.XX.XXX</a>
+ * Also see:<br/>
+ * <br/>
  * Igor Ibarguren and Jes&uacute;s M. P&eacute;rez and Javier Muguerza and Olatz Arbelaitz and Ainhoa Yera.  
  * "PCTBagging: From Inner Ensembles to Ensembles. A trade-off between Discriminating Capacity and Interpretability". Information Sciences (2022), Vol. 583, pp 219-238.
  * <a href="https://doi.org/10.1016/j.ins.2021.11.010" target="_blank">doi:10.1016/j.ins.2021.11.010</a>
- * <p/>
- * Also see:<br/>
- * <br/>
- * Igor Ibarguren and Jes&uacute;s M. P&eacute;rez and Javier Muguerza and Ibai Gurrutxaga and Olatz Arbelaitz.  
- * "Coverage-based resampling: Building robust consolidated decision trees". Knowledge Based Systems (2015), Vol. 79, pp 51-67.
- * <a href="http://dx.doi.org/10.1016/j.knosys.2014.12.023" target="_blank">doi:10.1016/j.knosys.2014.12.023</a>
  * <p/>
 <!-- globalinfo-end -->
  *
 <!-- technical-bibtex-start -->
  * BibTeX:
+ * <pre>
+ * &#64;article{Perez2025,
+ *    title = "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning",
+ *    journal = "Information Sciences (submitted)",
+ *    volume = "",
+ *    number = "",
+ *    pages = "1 - X",
+ *    year = "2025",
+ *    doi = "10.1016/j.ins.2025.XX.XXX",
+ *    author = "Jes\'us M. P\'erez and Olatz Arbelaitz"
+ * }
+ * </pre>
+ * <p/>
  * <pre>
  * &#64;article{Ibarguren2022,
  *    title = "PCTBagging: From Inner Ensembles to Ensembles. A trade-off between Discriminating Capacity and Interpretability",
@@ -90,18 +172,6 @@ import weka.core.TechnicalInformation.Type;
  *    year = "2022",
  *    doi = "10.1016/j.ins.2021.11.010",
  *    author = "Igor Ibarguren and Jes\'us M. P\'erez and Javier Muguerza and Olatz Arbelaitz and Ainhoa Yera"
- * }
- * </pre>
- * <p/>
- * <pre>
- * &#64;article{Ibarguren2015,
- *    title = "Coverage-based resampling: Building robust consolidated decision trees",
- *    journal = "Knowledge Based Systems",
- *    volume = "79",
- *    pages = "51 - 67",
- *    year = "2015",
- *    doi = "10.1016/j.knosys.2014.12.023",
- *    author = "Igor Ibarguren and Jes\'us M. P\'erez and Javier Muguerza and Ibai Gurrutxaga and Olatz Arbelaitz"
  * }
  * </pre>
  * <p/>
@@ -306,7 +376,7 @@ public class J48PartiallyConsolidated
 		new Tag(Visualize_All, "All")
 	};
 	
-	/** Options related to PCTBagging algorithm
+	/** Options related to PCTBagging (Partially Consolidated Tree-Bagging) algorithm
 	 *  (Prefix PCTB added to the option names in order to appear together in the graphical interface)
 	 ********************************************************************************/
 
@@ -389,7 +459,16 @@ public class J48PartiallyConsolidated
 				+ "Allows building a classifier between a single consolidated tree (100%), based on J48Consolidated, "
 				+ "and a bagging (0%), according to the given consolidation percent.\n"
 				+ "First, a partially consolidated tree is built based on a set of samples, and then, "
-				+ "a standard J48 decision tree is developed from the leaves of the tree related to each sample, as Bagging does. "
+				+ "a standard J48 decision tree is developed from the leaves of the tree related to each sample, as Bagging does, "
+				+ "combining J48Consolidated's interpretability with Bagging's discriminative power.\n"
+				+ "Key improvements:\n"
+		        + "- Flexible node specification: exact count or percentage of nodes\n"
+		        + "- Iterative construction that stops when reaching target nodes\n"
+		        + "- 7 node-selection criteria (Size, GainRatio variants, etc.)\n"
+		        + "- 2 search heuristics (Best-first and Hill climbing)\n"
+		        + "- Optional 'unrestricted' pruning of base trees\n"
+		        + "- Detailed node annotations showing development order and ensemble retention\n"
+		        + "- 40+ performance metrics for comprehensive evaluation\n\n"
 				+ "For more information, see:\n\n"
 				+ getTechnicalInformation().toString();
 	}
@@ -405,22 +484,22 @@ public class J48PartiallyConsolidated
 		TechnicalInformation 	result;
 
 		result = new TechnicalInformation(Type.ARTICLE);
-		result.setValue(Field.AUTHOR, "Igor Ibarguren and Jesús M. Pérez and Javier Muguerza and Olatz Arbelaitz and Ainhoa Yera");
-		result.setValue(Field.YEAR, "2022");
-		result.setValue(Field.TITLE, "PCTBagging: From Inner Ensembles to Ensembles. A trade-off between Discriminating Capacity and Interpretability");
-	    result.setValue(Field.JOURNAL, "Information Sciences");
-	    result.setValue(Field.VOLUME, "583");
-	    result.setValue(Field.PAGES, "219-238");
-	    result.setValue(Field.URL, "https://doi.org/10.1016/j.ins.2021.11.010");
-	    
+		result.setValue(Field.AUTHOR, "Jesús M. Pérez and Olatz Arbelaitz");
+		result.setValue(Field.YEAR, "2025");
+		result.setValue(Field.TITLE, "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning");
+	    result.setValue(Field.JOURNAL, "Information Sciences (submitted)");
+	    result.setValue(Field.VOLUME, "");
+	    result.setValue(Field.PAGES, "1-XX");
+	    result.setValue(Field.URL, "https://doi.org/10.1016/j.ins.2025.XX.XXX");
+
 	    TechnicalInformation additional = new TechnicalInformation(Type.ARTICLE);
-	    additional.setValue(Field.AUTHOR, "Igor Ibarguren and Jesús M. Pérez and Javier Muguerza and Ibai Gurrutxaga and Olatz Arbelaitz");
-	    additional.setValue(Field.YEAR, "2015");
-	    additional.setValue(Field.TITLE, "Coverage-based resampling: Building robust consolidated decision trees");
-	    additional.setValue(Field.JOURNAL, "Knowledge Based Systems");
-	    additional.setValue(Field.VOLUME, "79");
-	    additional.setValue(Field.PAGES, "51-67");
-	    additional.setValue(Field.URL, "http://dx.doi.org/10.1016/j.knosys.2014.12.023");
+	    additional.setValue(Field.AUTHOR, "Igor Ibarguren and Jesús M. Pérez and Javier Muguerza and Olatz Arbelaitz and Ainhoa Yera");
+	    additional.setValue(Field.YEAR, "2022");
+	    additional.setValue(Field.TITLE, "PCTBagging: From Inner Ensembles to Ensembles. A trade-off between Discriminating Capacity and Interpretability");
+	    additional.setValue(Field.JOURNAL, "Information Sciences");
+	    additional.setValue(Field.VOLUME, "583");
+	    additional.setValue(Field.PAGES, "219-238");
+	    additional.setValue(Field.URL, "https://doi.org/10.1016/j.ins.2021.11.010");
 	    result.add(additional);
 
 		return result;
