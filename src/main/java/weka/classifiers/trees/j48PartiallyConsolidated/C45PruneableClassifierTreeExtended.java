@@ -16,9 +16,9 @@ import weka.core.Instances;
  * Class for extend handling C45PruneableClassifierTree class
  * *************************************************************************************
  *
- * @author Ander Otsoa de Alda Alzaga (ander.otsoadealda@gmail.com)
  * @author Jesús M. Pérez (txus.perez@ehu.eus)
- * @version $Revision: 0.3 $
+ * @author Ander Otsoa de Alda Alzaga (ander.otsoadealda@gmail.com)
+ * @version $Revision: 1.0 $
  */
 public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTree implements AdditionalMeasureProducer {
 

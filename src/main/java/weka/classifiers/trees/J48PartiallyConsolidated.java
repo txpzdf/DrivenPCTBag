@@ -115,24 +115,24 @@ import weka.core.TechnicalInformation.Type;
  * categories of performance measures in WEKA's Experimenter: timing diagnostics, tree structure analysis, ensemble 
  * aggregation statistics, and structure preservation metrics.<p/>
  * 
- * Timing Measures: The implementation extends WEKA’s default Elapsed_Time_training with four specialized measures 
+ * · Timing Measures: The implementation extends WEKA’s default Elapsed_Time_training with four specialized measures 
  * to profile runtime components: elapsedTimeResampling (inherited from J48Consolidated) captures data sampling 
  * overhead; ElapsedTimeTrainingWholeCT records full consolidated tree construction (used in percentage-based mode); 
  * ElapsedTimeTrainingPartialCT tracks partial consolidated tree building; and ElapsedTimeTrainingAssocBagging measures
  * the time to generate all Bagging-associated base trees.<p/>
  * 
- * Tree Structure Measures (Explainability Quantification): Beyond standard J48 metrics (TreeSize, NumLeaves), three 
+ * · Tree Structure Measures (Explainability Quantification): Beyond standard J48 metrics (TreeSize, NumLeaves), three 
  * new measures quantify explainability: NumInnerNodes counts decision nodes (direct explanatory components); 
  * ExplanationLength computes average root-to-leaf path length; and WeightedExplanationLength adjusts this by leaf 
  * instance counts. These evaluate the trade-off between model complexity and human interpretability in the partial 
  * consolidated tree.<p/>
  * 
- * Base Tree Ensemble Aggregates: For each structural measure (e.g., ExplanationLength), six aggregation statistics 
+ * · Base Tree Ensemble Aggregates: For each structural measure (e.g., ExplanationLength), six aggregation statistics 
  * are computed across all Bagging-associated base trees: mean (Avg), median (Mdn), minimum (Min), maximum (Max), 
  * sum (Sum), and standard deviation (Dev). The 30 resulting metrics (e.g., measureAvgExplanationLength) characterize 
  * ensemble-wide behavior, enabling comparisons of stability and diversity.<p/>
  * 
- * Structure Preservation Measures: When pruneBaseTreesWithoutPreservingConsolidatedStructure is enabled, node-level 
+ * · Structure Preservation Measures: When pruneBaseTreesWithoutPreservingConsolidatedStructure is enabled, node-level 
  * retention rates ([Str: p%]) are aggregated into five global metrics: measureAvg/Mdn/Min/Max/DevPercBaseTreesPreservingStructure.
  * These indicate how consistently base trees adhere to the explanatory tree’s structure.<p/>
  * 
@@ -213,8 +213,8 @@ import weka.core.TechnicalInformation.Type;
  *  Seed for random data shuffling (default 1).</pre>
  * 
  * Options to set the Resampling Method (RM) for the generation of samples
- *  to use in the consolidation process <br/>
- * =============================================================================================== 
+ *  to use in the consolidation process<br/>
+ * =================================================================== 
  * <pre> -RM-C
  *  Determines that the way to set the number of samples to be generated will be based on
  *  a coverage value as a percent. In the case this option is not set, the number of samples
@@ -249,68 +249,69 @@ import weka.core.TechnicalInformation.Type;
  *  * -2 (stratified): Maintains the original class distribution in the new samples
  *  (default 50.0)</pre>
  * 
- * Options to leave partially consolidated the built consolidated tree (PCTB)
+ * Options to Partially Consolidated Tree-Bagging (PCTBagging) multiple classifier<br/>
  * ============================================================================ 
-	 * <pre>-PCTB-C consolidation percent <br>
-	 * Determines the number of inner nodes to leave as consolidated as a percent 
-	 * according to the inner nodes of the whole consolidated tree (If -PCTB-BP appears(by default).
-	 * If -PCTB-BP does not appear, it directly determines the number of internal nodes to be developed
-	 * as a specific value.    
-	 * (Default: 20.0)<pre>
-	 *
-	 * <pre>-PCTB-BP<br>
-	 * Set the way to set the number of inner nodes to be developed from the partial 
-	 * consolidated tree based on a percentage value with regard to the number of nodes 
-	 * in the whole consolidated tree (instead of using a concrete value).
-	 * (Default: true)<pre>
-	 * 
-	 * <pre>-PCTB-PC criteria<br>
-	 * Indicates the criteria used when choosing the next node to be developed in the construction
-	 * of the partial consolidated tree:
-	 *  · 0: Original (recursive)
-	 *  · 1: Level by level
-	 *  · 2: Node by node - Pre-order
-	 *  · 3: Node by node - Size
-	 *  · 4: Node by node - Gain ratio (Whole data)
-	 *  · 5: Node by node - Gain ratio (Set of samples)
-	 *  · 6: Node by node - Gain ratio (Whole data) x Size
-	 *  · 7: Node by node - Gain ratio (Set of samples) x Size
-	 * (Default: Size)<pre>
-	 * 
-	 * <pre>-PCTB-HC<br>
-	 * Build the partial tree ordered by a criteria using Hill Climbing (instead of Best-first).
-	 * (Default: true)<pre>
-	 *
-	 * <pre>-PCTB-CU <br>
-	 * Use unpruned partial Consolidated Tree (CT).
-	 * (Default: true)<pre>
-	 * 
-	 * <pre>-PCTB-CC <br>
-	 * Collapse the partial Consolidated Tree (CT).
-	 * (Default: true)<pre>
-	 * 
-	 * <pre>-PCTB-WP<br>
-	 * Determines whether to prune the base trees without preserving the structure of
-	 * the partially consolidated tree (or not). 
-	 * (Default: false)<pre>
-	 * 
-	 * <pre>-PCTB-V mode
-	 * Determines how many base trees will be shown:
-	 *  None, only the first ten (if they exist) or all.  
-	 * (Default: only the first ten)<pre>
-	 * 
-	 * <pre>-PCTB-P<br>
-	 * Determines whether to show the explanation aggregated measures of the all decision trees
-	 *  that compose the final classifier (MCS).  
-	 * (Default: false)<pre>
-	 *  
+ * <pre>-PCTB-C consolidation percent
+ * Determines the number of inner nodes to leave as consolidated as a percent 
+ * according to the inner nodes of the whole consolidated tree (If -PCTB-BP appears(by default).
+ * If -PCTB-BP does not appear, it directly determines the number of internal nodes to be developed
+ * as a specific value.    
+ * (Default: 20.0)</pre>
+ *
+ * <pre>-PCTB-BP
+ * Set the way to set the number of inner nodes to be developed from the partial 
+ * consolidated tree based on a percentage value with regard to the number of nodes 
+ * in the whole consolidated tree (instead of using a concrete value).
+ * (Default: true)</pre>
+ * 
+ * <pre>-PCTB-PC criteria
+ * Indicates the criteria used when choosing the next node to be developed in the construction
+ * of the partial consolidated tree:
+ *  · 0: Original (recursive)
+ *  · 1: Level by level
+ *  · 2: Node by node - Pre-order
+ *  · 3: Node by node - Size
+ *  · 4: Node by node - Gain ratio (Whole data)
+ *  · 5: Node by node - Gain ratio (Set of samples)
+ *  · 6: Node by node - Gain ratio (Whole data) x Size
+ *  · 7: Node by node - Gain ratio (Set of samples) x Size
+ * (Default: Size)</pre>
+ * 
+ * <pre>-PCTB-HC
+ * Build the partial tree ordered by a criteria using Hill Climbing (instead of Best-first).
+ * (Default: true)</pre>
+ *
+ * <pre>-PCTB-CU
+ * Use unpruned partial Consolidated Tree (CT).
+ * (Default: true)</pre>
+ * 
+ * <pre>-PCTB-CC
+ * Collapse the partial Consolidated Tree (CT).
+ * (Default: true)</pre>
+ * 
+ * <pre>-PCTB-WP
+ * Determines whether to prune the base trees without preserving the structure of
+ * the partially consolidated tree (or not). 
+ * (Default: false)</pre>
+ * 
+ * <pre>-PCTB-V mode
+ * Determines how many base trees will be shown:
+ * None, only the first ten (if they exist) or all.  
+ * (Default: only the first ten)</pre>
+ * 
+ * <pre>-PCTB-P
+ * Determines whether to show the explanation aggregated measures of the all decision trees
+ * that compose the final classifier (MCS).  
+ * (Default: false)</pre>
+ *  
 <!-- options-end -->
  *
  * @author Jesús M. Pérez (txus.perez@ehu.eus)
+ * @author Josué Cabezas Regoyo
  * @author Ander Otsoa de Alda Alzaga (ander.otsoadealda@gmail.com)
  *  (based on J48Consolidated.java written by Jesús M. Pérez et al) 
  *  (based on J48.java written by Eibe Frank)
- * @version $Revision: 0.3 $
+ * @version $Revision: 1.1 $
  */
 public class J48PartiallyConsolidated
 	extends J48Consolidated
@@ -340,7 +341,6 @@ public class J48PartiallyConsolidated
 	public static final int PriorCrit_GainratioSetSamples = 5;
 	public static final int PriorCrit_GainratioWholeData_Size = 6;
 	public static final int PriorCrit_GainratioSetSamples_Size = 7;
-
 	
 	/** Strings related to the ways to set the priority criteria option */
 	public static final Tag[] TAGS_WAYS_TO_SET_PRIORITY_CRITERIA = {
@@ -441,7 +441,7 @@ public class J48PartiallyConsolidated
 	protected int m_PCTBvisualizeBaseTrees = Visualize_FirstOnes;
 
 	/** Whether to show the explanation aggregated measures of the all decision trees
-	 *  that compose the final classifier (MCS). */
+	 * that compose the final classifier (MCS). */
 	protected boolean m_PCTBprintExplanationMeasuresBaseTrees = false;
 
 	/** Array for storing the generated base classifiers.
@@ -672,83 +672,85 @@ public class J48PartiallyConsolidated
 	 *
 	 * Valid options are: <p>
 	 * 
-	 * J48 options
-	 * ============= 
+	 * J48 options <br/>
+	 * ==========
 	 *
-	 * -U <br>
-	 * Use unpruned tree.<p>
-	 *
-	 * -C confidence <br>
-	 * Set confidence threshold for pruning. (Default: 0.25) <p>
-	 *
-	 * -M number <br>
-	 * Set minimum number of instances per leaf. (Default: 2) <p>
-	 *
-	 * -S <br>
-	 * Don't perform subtree raising. <p>
-	 *
-	 * -L <br>
-	 * Do not clean up after the tree has been built. <p>
-	 *
-	 * -A <br>
-	 * If set, Laplace smoothing is used for predicted probabilites. <p>
-	 *
-	 * -Q seed <br>
-	 * Seed for random data shuffling (Default: 1) <p>
+	 * <pre> -U
+	 *  Use unpruned tree.</pre>
+	 * 
+	 * <pre> -C &lt;pruning confidence&gt;
+	 *  Set confidence threshold for pruning.
+	 *  (default 0.25)</pre>
+	 * 
+	 * <pre> -M &lt;minimum number of instances&gt;
+	 *  Set minimum number of instances per leaf.
+	 *  (default 2)</pre>
+	 *  
+	 * <pre> -S
+	 *  Don't perform subtree raising.</pre>
+	 * 
+	 * <pre> -L
+	 *  Do not clean up after the tree has been built.</pre>
+	 * 
+	 * <pre> -A
+	 *  Laplace smoothing for predicted probabilities.</pre>
+	 * 
+	 * <pre> -Q &lt;seed&gt;
+	 *  Seed for random data shuffling (default 1).</pre>
 	 * 
 	 * Options to set the Resampling Method (RM) for the generation of samples
-	 *  to use in the consolidation process
+	 *  to use in the consolidation process<br/>
+	 * =================================================================== 
+	 * <pre> -RM-C
+	 *  Determines that the way to set the number of samples to be generated will be based on
+	 *  a coverage value as a percent. In the case this option is not set, the number of samples
+	 *  will be determined using a fixed value. 
+	 *  (Set by default)</pre>
+	 * 
+	 * <pre> -RM-N &lt;number of samples&gt;
+	 *  Number of samples to be generated for use in the construction of the consolidated tree.
+	 *  It can be set as a fixed value or based on a coverage value as a percent, when -RM-C option
+	 *  is used, which guarantees the number of samples necessary to cover adequately the examples 
+	 *  of the original sample
+	 *  (default 5 for a fixed value or 99% for the case based on a coverage value)</pre>
+	 * 
+	 * <pre> -RM-R
+	 *  Determines whether or not replacement is used when generating the samples.
+	 *  (default false)</pre>
+	 * 
+	 * <pre> -RM-B &lt;Size of each sample(&#37;)&gt;
+	 *  Size of each sample(bag), as a percentage of the training set size.
+	 *  Combined with the option &lt;distribution minority class&gt; accepts:
+	 *  * -1 (sizeOfMinClass): The size of the minority class  
+	 *  * -2 (Max): Maximum size taking into account &lt;distribution minority class&gt;
+	 *  *           and using no replacement
+	 *  (default -2)</pre>
+	 *  
+	 * <pre> -RM-D &lt;distribution minority class&gt;
+	 *  Determines the new value of the distribution of the minority class, if we want to change it.
+	 *  It can be one of the following values:
+	 *  * A value between 0 and 100 to change the portion of minority class instances in the new samples
+	 *    (this option can only be used with binary problems (two classes datasets))
+	 *  * -1 (free): Works with the instances without taking into account their class  
+	 *  * -2 (stratified): Maintains the original class distribution in the new samples
+	 *  (default 50.0)</pre>
+	 * 
+	 * Options to Partially Consolidated Tree-Bagging (PCTBagging) multiple classifier<br/>
 	 * ============================================================================ 
-	 * -RM-C <br>
-	 * Determines that the way to set the number of samples to be generated will be based on<br>
-	 * a coverage value as a percent. In the case this option is not set, the number of samples<br>
-	 * will be determined using a fixed value. <br>
-	 * (Set by default)<p>
-	 * 
-	 * -RM-N &lt;number of samples&gt;<br>
-	 * Number of samples to be generated for use in the construction of the consolidated tree.<br>
-	 * It can be set as a fixed value or based on a coverage value as a percent, when -RM-C option<br>
-	 * is used, which guarantees the number of samples necessary to cover adequately the examples<br> 
-	 * of the original sample<br>
-	 * (Default 5 for a fixed value or 99% for the case based on a coverage value)<p>
-	 * 
-	 * -RM-R <br>
-	 * Determines whether or not replacement is used when generating the samples. <br>
-	 * (Default: false)<p>
-	 * 
-	 * -RM-B percent <br>
-	 * Size of each sample(bag), as a percentage of the training set size. <br>
-	 * Combined with the option &lt;distribution minority class&gt; accepts: <br>
-	 *  * -1 (sizeOfMinClass): The size of the minority class <br>
-	 *  * -2 (maxSize): Maximum size taking into account &lt;distribution minority class&gt;
-	 *              and using no replacement <br>
-	 * (Default: -2(maxSize)) <p>
-	 * 
-	 * -RM-D distribution minority class <br>
-	 * Determines the new value of the distribution of the minority class, if we want to change it. <br>
-	 * It can be one of the following values: <br>
-	 *  * A value between 0 and 100 to change the portion of minority class instances in the new samples <br>
-	 *    (If the dataset is multi-class, only the special value 50.0 will be accepted to balance the classes)
-	 *  * -1 (free): Works with the instances without taking into account their class <br>
-	 *  * -2 (stratified): Maintains the original class distribution in the new samples <br>
-	 * (Default: -1(free)) <p>
-	 * 
-	 * Options to leave partially consolidated the built consolidated tree (PCTB)
-	 * ============================================================================ 
-	 * <pre>-PCTB-C consolidation percent <br>
+	 * <pre>-PCTB-C consolidation percent
 	 * Determines the number of inner nodes to leave as consolidated as a percent 
 	 * according to the inner nodes of the whole consolidated tree (If -PCTB-BP appears(by default).
 	 * If -PCTB-BP does not appear, it directly determines the number of internal nodes to be developed
 	 * as a specific value.    
-	 * (Default: 20.0)<pre>
+	 * (Default: 20.0)</pre>
 	 *
-	 * <pre>-PCTB-BP<br>
+	 * <pre>-PCTB-BP
 	 * Set the way to set the number of inner nodes to be developed from the partial 
 	 * consolidated tree based on a percentage value with regard to the number of nodes 
 	 * in the whole consolidated tree (instead of using a concrete value).
-	 * (Default: true)<pre>
+	 * (Default: true)</pre>
 	 * 
-	 * <pre>-PCTB-PC criteria<br>
+	 * <pre>-PCTB-PC criteria
 	 * Indicates the criteria used when choosing the next node to be developed in the construction
 	 * of the partial consolidated tree:
 	 *  · 0: Original (recursive)
@@ -759,35 +761,35 @@ public class J48PartiallyConsolidated
 	 *  · 5: Node by node - Gain ratio (Set of samples)
 	 *  · 6: Node by node - Gain ratio (Whole data) x Size
 	 *  · 7: Node by node - Gain ratio (Set of samples) x Size
-	 * (Default: Size)<pre>
+	 * (Default: Size)</pre>
 	 * 
-	 * <pre>-PCTB-HC<br>
+	 * <pre>-PCTB-HC
 	 * Build the partial tree ordered by a criteria using Hill Climbing (instead of Best-first).
-	 * (Default: true)<pre>
+	 * (Default: true)</pre>
 	 *
-	 * <pre>-PCTB-CU <br>
+	 * <pre>-PCTB-CU
 	 * Use unpruned partial Consolidated Tree (CT).
-	 * (Default: true)<pre>
+	 * (Default: true)</pre>
 	 * 
-	 * <pre>-PCTB-CC <br>
+	 * <pre>-PCTB-CC
 	 * Collapse the partial Consolidated Tree (CT).
-	 * (Default: true)<pre>
+	 * (Default: true)</pre>
 	 * 
-	 * <pre>-PCTB-WP<br>
+	 * <pre>-PCTB-WP
 	 * Determines whether to prune the base trees without preserving the structure of
 	 * the partially consolidated tree (or not). 
-	 * (Default: false)<pre>
+	 * (Default: false)</pre>
 	 * 
 	 * <pre>-PCTB-V mode
 	 * Determines how many base trees will be shown:
-	 *  None, only the first ten (if they exist) or all.  
-	 * (Default: only the first ten)<pre>
+	 * None, only the first ten (if they exist) or all.  
+	 * (Default: only the first ten)</pre>
 	 * 
-	 * <pre>-PCTB-P<br>
+	 * <pre>-PCTB-P
 	 * Determines whether to show the explanation aggregated measures of the all decision trees
-	 *  that compose the final classifier (MCS).  
-	 * (Default: false)<pre>
-	 * 
+	 * that compose the final classifier (MCS).  
+	 * (Default: false)</pre>
+	 *  
 	 * @return an enumeration of all the available options.
 	 */
 	public Enumeration<Option> listOptions() {
@@ -861,59 +863,22 @@ public class J48PartiallyConsolidated
    <!-- options-start -->
 	 * Valid options are: <p/>
 	 * 
-	 * Options to set the Resampling Method (RM) for the generation of samples
-	 *  to use in the consolidation process
+	 * Options to Partially Consolidated Tree-Bagging (PCTBagging) multiple classifier<br/>
 	 * ============================================================================ 
-	 * <pre> -RM-C
-	 *  Determines that the way to set the number of samples to be generated will be based on
-	 *  a coverage value as a percent. In the case this option is not set, the number of samples
-	 *  will be determined using a fixed value. 
-	 *  (Set by default)</pre>
-	 * 
-	 * <pre> -RM-N &lt;number of samples&gt;
-	 *  Number of samples to be generated for use in the construction of the consolidated tree.
-	 *  It can be set as a fixed value or based on a coverage value as a percent, when -RM-C option
-	 *  is used, which guarantees the number of samples necessary to cover adequately the examples 
-	 *  of the original sample
-	 *  (default 5 for a fixed value or 99% for the case based on a coverage value)</pre>
-	 * 
-	 * <pre> -RM-R
-	 *  Determines whether or not replacement is used when generating the samples.
-	 *  (default true)</pre>
-	 * 
-	 * <pre> -RM-B &lt;Size of each sample(&#37;)&gt;
-	 *  Size of each sample(bag), as a percentage of the training set size.
-	 *  Combined with the option &lt;distribution minority class&gt; accepts:
-	 *  * -1 (sizeOfMinClass): The size of the minority class  
-	 *  * -2 (maxSize): Maximum size taking into account &lt;distribution minority class&gt;
-	 *  *           and using no replacement
-	 *  (default -2(maxSize))</pre>
-	 * 
-	 * <pre> -RM-D &lt;distribution minority class&gt;
-	 *  Determines the new value of the distribution of the minority class, if we want to change it.
-	 *  It can be one of the following values:
-	 *  * A value between 0 and 100 to change the portion of minority class instances in the new samples
-	 *    (If the dataset is multi-class, only the special value 50.0 will be accepted to balance the classes)
-	 *  * -1 (free): Works with the instances without taking into account their class  
-	 *  * -2 (stratified): Maintains the original class distribution in the new samples
-	 *  (default 50.0)</pre>
-	 * 
-	 * Options to leave partially consolidated the built consolidated tree (PCTB)
-	 * ============================================================================ 
-	 * <pre>-PCTB-C consolidation percent <br>
+	 * <pre>-PCTB-C consolidation percent
 	 * Determines the number of inner nodes to leave as consolidated as a percent 
 	 * according to the inner nodes of the whole consolidated tree (If -PCTB-BP appears(by default).
 	 * If -PCTB-BP does not appear, it directly determines the number of internal nodes to be developed
 	 * as a specific value.    
-	 * (Default: 20.0)<pre>
+	 * (Default: 20.0)</pre>
 	 *
-	 * <pre>-PCTB-BP<br>
+	 * <pre>-PCTB-BP
 	 * Set the way to set the number of inner nodes to be developed from the partial 
 	 * consolidated tree based on a percentage value with regard to the number of nodes 
 	 * in the whole consolidated tree (instead of using a concrete value).
-	 * (Default: true)<pre>
+	 * (Default: true)</pre>
 	 * 
-	 * <pre>-PCTB-PC criteria<br>
+	 * <pre>-PCTB-PC criteria
 	 * Indicates the criteria used when choosing the next node to be developed in the construction
 	 * of the partial consolidated tree:
 	 *  · 0: Original (recursive)
@@ -924,43 +889,40 @@ public class J48PartiallyConsolidated
 	 *  · 5: Node by node - Gain ratio (Set of samples)
 	 *  · 6: Node by node - Gain ratio (Whole data) x Size
 	 *  · 7: Node by node - Gain ratio (Set of samples) x Size
-	 * (Default: Size)<pre>
+	 * (Default: Size)</pre>
 	 * 
-	 * <pre>-PCTB-HC<br>
+	 * <pre>-PCTB-HC
 	 * Build the partial tree ordered by a criteria using Hill Climbing (instead of Best-first).
-	 * (Default: true)<pre>
+	 * (Default: true)</pre>
 	 *
-	 * <pre>-PCTB-CU <br>
+	 * <pre>-PCTB-CU
 	 * Use unpruned partial Consolidated Tree (CT).
-	 * (Default: true)<pre>
+	 * (Default: true)</pre>
 	 * 
-	 * <pre>-PCTB-CC <br>
+	 * <pre>-PCTB-CC
 	 * Collapse the partial Consolidated Tree (CT).
-	 * (Default: true)<pre>
+	 * (Default: true)</pre>
 	 * 
-	 * <pre>-PCTB-WP<br>
+	 * <pre>-PCTB-WP
 	 * Determines whether to prune the base trees without preserving the structure of
 	 * the partially consolidated tree (or not). 
-	 * (Default: false)<pre>
+	 * (Default: false)</pre>
 	 * 
 	 * <pre>-PCTB-V mode
 	 * Determines how many base trees will be shown:
-	 *  None, only the first ten (if they exist) or all.  
-	 * (Default: only the first ten)<pre>
+	 * None, only the first ten (if they exist) or all.  
+	 * (Default: only the first ten)</pre>
 	 * 
-	 * <pre>-PCTB-P<br>
+	 * <pre>-PCTB-P
 	 * Determines whether to show the explanation aggregated measures of the all decision trees
-	 *  that compose the final classifier (MCS).  
-	 * (Default: false)<pre>
-	 * 
+	 * that compose the final classifier (MCS).  
+	 * (Default: false)</pre>
+	 *  
    <!-- options-end -->
 	 *
 	 * @param options the list of options as an array of strings
 	 * @throws Exception if an option is not supported
 	 */
-	/** Whether to prune the base trees without preserving the structure of the partially
-	 * consolidated tree. */
-
 	public void setOptions(String[] options) throws Exception {
 	    
 		// Options to leave partially consolidated the built consolidated tree (PCTB)
@@ -1176,7 +1138,7 @@ public class J48PartiallyConsolidated
 
 	/**
 	 * Returns a description of the explanation measures of the all decision trees
-	 *  that compose the final classifier (MCS)
+	 * that compose the final classifier (MCS)
 	 * 
 	 * @return a description of the explanation measures of all DTs
 	 */
