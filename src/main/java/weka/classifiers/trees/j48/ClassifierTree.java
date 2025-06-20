@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Stack;
 
+import weka.classifiers.trees.j48PartiallyConsolidated.C45PartiallyConsolidatedPruneableClassifierTree;
 import weka.core.AdditionalMeasureProducer;
 import weka.core.Capabilities;
 import weka.core.CapabilitiesHandler;
@@ -519,6 +520,25 @@ public class ClassifierTree implements Drawable, Serializable, RevisionHandler, 
 			for (int i = 0; i < m_sons.length; i++)
 				previousSum = m_sons[i].sumBranchesLength(weighted, partialLength + 1, previousSum, rootSize);
 			return previousSum;
+		}
+	}
+
+	/**
+	 * Returns number of levels in tree structure.
+	 * 
+	 * @return the number of levels
+	 */
+	public int numLevels() {
+		if (m_isLeaf)
+			return 0;
+		else {
+			int maxLevels = -1;
+			for (int i = 0; i < m_sons.length; i++) {
+				int nl = ((C45PartiallyConsolidatedPruneableClassifierTree) m_sons[i]).numLevels();
+				if (nl > maxLevels)
+					maxLevels = nl;
+			}
+			return 1 + maxLevels;
 		}
 	}
 
