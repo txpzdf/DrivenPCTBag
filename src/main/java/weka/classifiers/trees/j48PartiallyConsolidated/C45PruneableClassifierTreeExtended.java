@@ -46,11 +46,11 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 	 */
 	public C45PruneableClassifierTreeExtended(ModelSelection toSelectLocModel,
 			C45ModelSelectionExtended baseModelToForceDecision,
-		    boolean pruneTree,float cf,
-		    boolean raiseTree,
-		    boolean cleanup,
-            boolean collapseTree,
-            boolean notPreservingStructure) throws Exception {
+			boolean pruneTree,float cf,
+			boolean raiseTree,
+			boolean cleanup,
+			boolean collapseTree,
+			boolean notPreservingStructure) throws Exception {
 		super(toSelectLocModel, pruneTree, cf, raiseTree, cleanup, collapseTree);
 		m_baseModelToForceDecision = baseModelToForceDecision;
 		m_pruneWithoutPreservingConsolidatedStructure = notPreservingStructure;
@@ -111,7 +111,28 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 	 * @param numSons Number of sons
 	 */
 	public void createSonsVector(int numSons) {
-		m_sons = new ClassifierTree [numSons];
+		m_sons = new C45PruneableClassifierTreeExtended [numSons];
+	}
+
+	/**
+	 * Returns a newly created tree.
+	 * 
+	 * @param data the training data
+	 * @return the generated tree
+	 * @throws Exception if something goes wrong
+	 */
+	protected ClassifierTree getNewTree(Instances data) throws Exception {
+
+		C45PruneableClassifierTreeExtended newTree = 
+			new C45PruneableClassifierTreeExtended(
+				m_toSelectModel,
+				m_baseModelToForceDecision,
+			    m_pruneTheTree, m_CF, m_subtreeRaising, m_cleanup, m_collapseTheTree,
+				m_pruneWithoutPreservingConsolidatedStructure
+				);
+		newTree.buildTree(data, m_subtreeRaising || !m_cleanup);
+
+		return newTree;
 	}
 
 	/**
@@ -130,7 +151,7 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 		// Free adjacent trees
 		m_sons = null;
 		m_isLeaf = true;
-	
+
 		// Get NoSplit Model for tree.
 		m_localModel = new NoSplit(localModel().distribution());
 	}
@@ -175,7 +196,7 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 			}
 		}
 	}
-	
+
 	/**
 	 * Rebuilds the tree according to J48 algorithm and
 	 *  maintaining the current tree structure
@@ -191,7 +212,7 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 			// TODO Implement the option binarySplits of J48
 			// TODO Implement the option reducedErrorPruning of J48
 			C45PruneableClassifierTreeExtended newTree = new C45PruneableClassifierTreeExtended(m_toSelectModel, m_baseModelToForceDecision, m_pruneTheTree, m_CF,
-							    m_subtreeRaising, m_cleanup, m_collapseTheTree, m_pruneWithoutPreservingConsolidatedStructure);
+					m_subtreeRaising, m_cleanup, m_collapseTheTree, m_pruneWithoutPreservingConsolidatedStructure);
 			if (m_pruneWithoutPreservingConsolidatedStructure) {
 				/* Build the tree without preserving the structure of the partially consolidated tree:
 				 * First grow the subtree with the data from the current node, replace the subtree
@@ -211,63 +232,106 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 		}
 	}
 
-	  /**
-	   * Returns the size of the tree
-	   * 
-	   * @return the size of the tree
-	   */
-	  public double measureTreeSize() {
-	    return numNodes();
-	  }
+	/**
+	 * Returns the size of the tree
+	 * 
+	 * @return the size of the tree
+	 */
+	public double measureTreeSize() {
+		return numNodes();
+	}
 
-	  /**
-	   * Returns the number of leaves
-	   * 
-	   * @return the number of leaves
-	   */
-	  public double measureNumLeaves() {
-	    return numLeaves();
-	  }
+	/**
+	 * Returns the number of leaves
+	 * 
+	 * @return the number of leaves
+	 */
+	public double measureNumLeaves() {
+		return numLeaves();
+	}
 
-	  /**
-	   * Returns the number of rules (same as number of leaves)
-	   * 
-	   * @return the number of rules
-	   */
-	  public double measureNumRules() {
-	    return numLeaves();
-	  }
+	/**
+	 * Returns the number of rules (same as number of leaves)
+	 * 
+	 * @return the number of rules
+	 */
+	public double measureNumRules() {
+		return numLeaves();
+	}
 
-	  /**
-	   * Returns the number of internal nodes
-	   * (those that give the explanation of the classification)
-	   * 
-	   * @return the number of internal nodes
-	   */
-	  public double measureNumInnerNodes() {
-	    return numNodes() - numLeaves();
-	  }
+	/**
+	 * Returns the number of internal nodes
+	 * (those that give the explanation of the classification)
+	 * 
+	 * @return the number of internal nodes
+	 */
+	public double measureNumInnerNodes() {
+		return numNodes() - numLeaves();
+	}
 
-	  /**
-	   * Returns the average length of the explanation of the classification
-	   * (as the average length of all the branches from root to leaf) 
-	   * 
-	   * @return the average length of the explanation
-	   */
-	  public double measureExplanationLength() {
-		  return averageBranchesLength(false);
-	  }
+	/**
+	 * Returns the average length of all the branches from root to leaf.
+	 * If weighted is true, takes into account the proportion of instances fallen into each leaf
+	 * (Ideally this function could be moved into the original WEKA class weka.classifiers.trees.j48.ClassifierTree 
+	 * alongside the numLeaves() and numNodes() functions)
+	 * 
+	 * @return the average length of all the branches
+	 */
+	public double averageBranchesLength(boolean weighted) {
 
-	  /**
-	   * Returns the weighted length of the explanation of the classification
-	   * (as the average length of all the branches from root to leaf)
-	   * taking into account the proportion of instances fallen into each leaf
-	   * 
-	   * @return the weighted length of the explanation
-	   */
-	  public double measureWeightedExplanationLength() {
-		  return averageBranchesLength(true);
-	  }
+		double rootSize = m_localModel.distribution().total(); 
+		double sum = sumBranchesLength(weighted, 0, (double)0.0, rootSize);
+		if (weighted)
+			return sum;
+		else
+			return sum / numLeaves();
+	}
+
+	/**
+	 * Returns the sum of the length of all the branches from root to leaf.
+	 * If weighted is true, takes into account the proportion of instances fallen into each leaf
+	 * (Ideally this function could be moved into the original WEKA class weka.classifiers.trees.j48.ClassifierTree 
+	 * alongside the numLeaves() and numNodes() functions)
+	 * 
+	 * @return the sum of then length of all the branches
+	 */
+	public double sumBranchesLength(boolean weighted, int partialLength, double partialSum, double rootSize) {
+
+		if (m_isLeaf) {
+			if (weighted) {
+				double leafSize = m_localModel.distribution().total(); 
+				return ((leafSize / rootSize) * partialLength) + partialSum;
+			} else
+				return partialLength + partialSum;
+		}
+		else {
+			double previousSum = partialSum;
+			for (int i = 0; i < m_sons.length; i++)
+				previousSum = ((C45PruneableClassifierTreeExtended)m_sons[i]).sumBranchesLength(weighted, partialLength + 1, previousSum, rootSize);
+			return previousSum;
+		}
+	}
+
+	/**
+	 * Returns the average length of the explanation of the classification
+	 * (as the average length of all the branches from root to leaf) 
+	 * 
+	 * @return the average length of the explanation
+	 */
+	public double measureExplanationLength() {
+		return averageBranchesLength(false);
+	}
+
+	/**
+	 * Returns the weighted length of the explanation of the classification
+	 * (as the average length of all the branches from root to leaf)
+	 * taking into account the proportion of instances fallen into each leaf
+	 * 
+	 * @return the weighted length of the explanation
+	 */
+	public double measureWeightedExplanationLength() {
+		return averageBranchesLength(true);
+	}
 
 	/**
 	 * Returns the value of the named measure
@@ -292,7 +356,7 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 			return measureWeightedExplanationLength();
 		} else {
 			throw new IllegalArgumentException(additionalMeasureName
-					+ " not supported (j48)");
+					+ " not supported (C45PruneableClassifierTreeExtended)");
 		}
 	}
 
@@ -303,7 +367,7 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 	 */
 	@Override
 	public Enumeration<String> enumerateMeasures() {
-		Vector<String> newVector = new Vector<String>(6);
+		Vector<String> newVector = new Vector<String>();
 		newVector.addElement("measureTreeSize");
 		newVector.addElement("measureNumLeaves");
 		newVector.addElement("measureNumRules");

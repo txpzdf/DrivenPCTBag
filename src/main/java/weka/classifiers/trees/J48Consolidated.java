@@ -16,7 +16,7 @@
 
 /*
  *    J48Consolidated.java
- *    Copyright (C) 2021 ALDAPA Team (http://www.aldapa.eus)
+ *    Copyright (C) 2025 ALDAPA Team (http://www.aldapa.eus)
  *    Faculty of Informatics, Donostia, 20018
  *    University of the Basque Country (UPV/EHU), Basque Country
  *    
@@ -198,7 +198,7 @@ import weka.gui.ProgrammaticProperty;
  * @author Igor Ibarguren (igor.ibarguren@ehu.eus) 
  *  (based on the previous version written in colaboration with Fernando Lozano)
  *  (based on J48.java written by Eibe Frank)
- * @version $Revision: 3.2 $
+ * @version $Revision: 3.3 $
  */
 public class J48Consolidated
 extends J48
@@ -1664,6 +1664,54 @@ TechnicalInformationHandler {
 	}
 
 	/**
+	 * Returns the number of internal nodes
+	 * (those that give the explanation of the classification)
+	 * (Ideally this measure could be moved into the original WEKA class weka.classifiers.trees.J48 
+	 * alongside the measures measureTreeSize, measureNumLeaves and measureNumRules)
+	 * 
+	 * @return the number of internal nodes
+	 */
+	public double measureNumInnerNodes() {
+		return m_root.numNodes() - m_root.numLeaves();
+	}
+
+	/**
+	 * Returns the average length of the explanation of the classification
+	 * (as the average length of all the branches from root to leaf) 
+	 * (Ideally this measure could be moved into the original WEKA class weka.classifiers.trees.J48 
+	 * alongside the measures measureTreeSize, measureNumLeaves and measureNumRules)
+	 * 
+	 * @return the average length of the explanation
+	 */
+	public double measureExplanationLength() {
+		return ((C45ConsolidatedPruneableClassifierTree)m_root).averageBranchesLength(false);
+	}
+
+	/**
+	 * Returns the weighted length of the explanation of the classification
+	 * (as the average length of all the branches from root to leaf)
+	 * taking into account the proportion of instances fallen into each leaf
+	 * (Ideally this measure could be moved into the original WEKA class weka.classifiers.trees.J48 
+	 * alongside the measures measureTreeSize, measureNumLeaves and measureNumRules)
+	 * 
+	 * @return the weighted length of the explanation
+	 */
+	public double measureWeightedExplanationLength() {
+		return ((C45ConsolidatedPruneableClassifierTree)m_root).averageBranchesLength(true);
+	}
+
+	/**
+	 * Returns number of levels in tree structure. 
+	 * (Ideally this measure could be moved into the original WEKA class weka.classifiers.trees.J48 
+	 * alongside the measures measureTreeSize, measureNumLeaves and measureNumRules)
+	 * 
+	 * @return the number of levels
+	 */
+	public double measureNumLevels() {
+		return ((C45ConsolidatedPruneableClassifierTree)m_root).numLevels();
+	}
+
+	/**
 	 * Returns the time taken to generate the sample vector for the consolidated tree.
 	 * 
 	 * @return elapsed time
@@ -1679,14 +1727,16 @@ TechnicalInformationHandler {
 	 * @return an enumeration of the measure names
 	 */
 	public Enumeration<String> enumerateMeasures() {
-		Enumeration<String> enm = super.enumerateMeasures();
 		Vector<String> measures = new Vector<String>();
-		while (enm.hasMoreElements())
-			measures.add(enm.nextElement());
+		measures.addAll(Collections.list(super.enumerateMeasures()));
 		//if (m_RMnumberSamplesHowToSet == NumberSamples_BasedOnCoverage)
-		measures.add("measureNumberSamplesByCoverage");
-		measures.add("measureTrueCoverage");
-		measures.add("measureElapsedTimeResampling");
+		measures.addElement("measureNumberSamplesByCoverage");
+		measures.addElement("measureTrueCoverage");
+		measures.addElement("measureNumInnerNodes");
+		measures.addElement("measureExplanationLength");
+		measures.addElement("measureWeightedExplanationLength");
+		measures.addElement("measureNumLevels");
+		measures.addElement("measureElapsedTimeResampling");
 		return measures.elements();
 	}
 
@@ -1703,6 +1753,14 @@ TechnicalInformationHandler {
 			return measureTrueCoverage();
 		} else if (additionalMeasureName.compareToIgnoreCase("measureNumberSamplesByCoverage") == 0) {
 			return measureNumberSamplesByCoverage();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureNumInnerNodes") == 0) {
+			return measureNumInnerNodes();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureExplanationLength") == 0) {
+			return measureExplanationLength();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureWeightedExplanationLength") == 0) {
+			return measureWeightedExplanationLength();
+		} else if (additionalMeasureName.compareToIgnoreCase("measureNumLevels") == 0) {
+			return measureNumLevels();
 		} else if (additionalMeasureName.compareToIgnoreCase("measureElapsedTimeResampling") == 0) {
 			return measureElapsedTimeResampling();
 		} else

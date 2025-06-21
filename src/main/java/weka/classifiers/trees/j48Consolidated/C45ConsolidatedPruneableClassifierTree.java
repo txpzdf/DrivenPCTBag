@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import weka.classifiers.trees.j48.C45PruneableClassifierTree;
 import weka.classifiers.trees.j48.ClassifierTree;
 import weka.classifiers.trees.j48.ModelSelection;
+import weka.classifiers.trees.j48PartiallyConsolidated.C45PartiallyConsolidatedPruneableClassifierTree;
 import weka.core.Instances;
 import weka.core.Utils;
 
@@ -134,6 +135,101 @@ public class C45ConsolidatedPruneableClassifierTree extends
 				m_isEmpty = true;
 			data = null;
 			samplesVector = null;
+		}
+	}
+
+	/**
+	 * Returns the average length of all the branches from root to leaf.
+	 * If weighted is true, takes into account the proportion of instances fallen into each leaf
+	 * (Ideally this function could be moved into the original WEKA class weka.classifiers.trees.j48.ClassifierTree 
+	 * alongside the numLeaves() and numNodes() functions)
+	 * 
+	 * @return the average length of all the branches
+	 */
+	public double averageBranchesLength(boolean weighted) {
+
+		double rootSize = m_localModel.distribution().total(); 
+		double sum = sumBranchesLength(weighted, 0, (double)0.0, rootSize);
+		if (weighted)
+			return sum;
+		else
+			return sum / numLeaves();
+	}
+
+	/**
+	 * Returns the sum of the length of all the branches from root to leaf.
+	 * If weighted is true, takes into account the proportion of instances fallen into each leaf
+	 * (Ideally this function could be moved into the original WEKA class weka.classifiers.trees.j48.ClassifierTree 
+	 * alongside the numLeaves() and numNodes() functions)
+	 * 
+	 * @return the sum of then length of all the branches
+	 */
+	public double sumBranchesLength(boolean weighted, int partialLength, double partialSum, double rootSize) {
+
+		if (m_isLeaf) {
+			if (weighted) {
+				double leafSize = m_localModel.distribution().total(); 
+				return ((leafSize / rootSize) * partialLength) + partialSum;
+			} else
+				return partialLength + partialSum;
+		}
+		else {
+			double previousSum = partialSum;
+			for (int i = 0; i < m_sons.length; i++)
+				previousSum = ((C45ConsolidatedPruneableClassifierTree)m_sons[i]).sumBranchesLength(weighted, partialLength + 1, previousSum, rootSize);
+			return previousSum;
+		}
+	}
+
+	/**
+	 * Returns number of levels in tree structure.
+	 * (Ideally this function could be moved into the original WEKA class weka.classifiers.trees.j48.ClassifierTree 
+	 * alongside the numLeaves() and numNodes() functions)
+	 * 
+	 * @return the number of levels
+	 */
+	public int numLevels() {
+		if (m_isLeaf)
+			return 0;
+		else {
+			int maxLevels = -1;
+			for (int i = 0; i < m_sons.length; i++) {
+				int nl = ((C45PartiallyConsolidatedPruneableClassifierTree) m_sons[i]).numLevels();
+				if (nl > maxLevels)
+					maxLevels = nl;
+			}
+			return 1 + maxLevels;
+		}
+	}
+
+	/**
+	 * Prints tree structure.
+	 * 
+	 * @return the tree structure
+	 */
+	@Override
+	public String toString() {
+
+		try {
+			StringBuffer text = new StringBuffer();
+
+			if (m_isLeaf) {
+				text.append(": ");
+				text.append(m_localModel.dumpLabel(0, m_train));
+			} else {
+				dumpTree(0, text);
+			}
+			text.append("\n\nNumber of Leaves  : \t" + numLeaves() + "\n");
+			text.append("\nSize of the tree : \t" + numNodes() + "\n");
+			text.append("=> Number of inner nodes : \t" + (numNodes()-numLeaves()) + "\n");
+	        text.append("\nAverage length of branches : \t" + 
+	        		Utils.roundDouble(averageBranchesLength(false),2) + "\n");
+	        text.append("\nAverage length of Branches weighted by leaves size : \t" + 
+	        		Utils.roundDouble(averageBranchesLength(true),2) + "\n");
+
+			return text.toString();
+		} catch (Exception e) {
+			return "Can't print classification tree.";
 		}
 	}
 

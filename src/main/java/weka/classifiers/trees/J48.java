@@ -837,50 +837,16 @@ public class J48 extends AbstractClassifier implements OptionHandler, Drawable,
   }
 
   /**
-   * Returns the number of internal nodes
-   * (those that give the explanation of the classification)
-   * 
-   * @return the number of internal nodes
-   */
-  public double measureNumInnerNodes() {
-    return m_root.numNodes() - m_root.numLeaves();
-  }
-
-  /**
-   * Returns the average length of the explanation of the classification
-   * (as the average length of all the branches from root to leaf) 
-   * 
-   * @return the average length of the explanation
-   */
-  public double measureExplanationLength() {
-	  return m_root.averageBranchesLength(false);
-  }
-
-  /**
-   * Returns the weighted length of the explanation of the classification
-   * (as the average length of all the branches from root to leaf)
-   * taking into account the proportion of instances fallen into each leaf
-   * 
-   * @return the weighted length of the explanation
-   */
-  public double measureWeightedExplanationLength() {
-	  return m_root.averageBranchesLength(true);
-  }
-
-  /**
    * Returns an enumeration of the additional measure names
    * 
    * @return an enumeration of the measure names
    */
   @Override
   public Enumeration<String> enumerateMeasures() {
-    Vector<String> newVector = new Vector<String>(6);
+    Vector<String> newVector = new Vector<String>(3);
     newVector.addElement("measureTreeSize");
     newVector.addElement("measureNumLeaves");
     newVector.addElement("measureNumRules");
-    newVector.addElement("measureNumInnerNodes");
-    newVector.addElement("measureExplanationLength");
-    newVector.addElement("measureWeightedExplanationLength");
     return newVector.elements();
   }
 
@@ -899,12 +865,6 @@ public class J48 extends AbstractClassifier implements OptionHandler, Drawable,
 		  return measureTreeSize();
 	  } else if (additionalMeasureName.compareToIgnoreCase("measureNumLeaves") == 0) {
 		  return measureNumLeaves();
-	  } else if (additionalMeasureName.compareToIgnoreCase("measureNumInnerNodes") == 0) {
-		  return measureNumInnerNodes();
-	  } else if (additionalMeasureName.compareToIgnoreCase("measureExplanationLength") == 0) {
-		  return measureExplanationLength();
-	  } else if (additionalMeasureName.compareToIgnoreCase("measureWeightedExplanationLength") == 0) {
-		  return measureWeightedExplanationLength();
 	  } else {
 		  throw new IllegalArgumentException(additionalMeasureName
 				  + " not supported (j48)");
