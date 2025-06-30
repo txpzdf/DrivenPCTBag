@@ -11,6 +11,7 @@ import weka.classifiers.trees.j48.ModelSelection;
 import weka.classifiers.trees.j48.NoSplit;
 import weka.core.AdditionalMeasureProducer;
 import weka.core.Instances;
+import weka.core.Utils;
 
 /**
  * Class for extend handling C45PruneableClassifierTree class
@@ -376,4 +377,37 @@ public class C45PruneableClassifierTreeExtended extends C45PruneableClassifierTr
 		newVector.addElement("measureWeightedExplanationLength");
 		return newVector.elements();
 	}
+
+	/**
+	 * Prints tree structure.
+	 * (Ideally this function could be moved into the original WEKA class weka.classifiers.trees.j48.ClassifierTree 
+	 * alongside the averageBranchesLength() and sumBranchesLength() functions)
+	 * @return the tree structure
+	 */
+	@Override
+	public String toString() {
+
+		try {
+			StringBuffer text = new StringBuffer();
+
+			if (m_isLeaf) {
+				text.append(": ");
+				text.append(m_localModel.dumpLabel(0, m_train));
+			} else {
+				dumpTree(0, text);
+			}
+			text.append("\n\nNumber of Leaves  : \t" + numLeaves() + "\n");
+			text.append("\nSize of the tree : \t" + numNodes() + "\n");
+			text.append("=> Number of inner nodes : \t" + (numNodes()-numLeaves()) + "\n");
+	        text.append("\nAverage length of branches : \t" + 
+	        		Utils.roundDouble(averageBranchesLength(false),2) + "\n");
+	        text.append("\nAverage length of Branches weighted by leaves size : \t" + 
+	        		Utils.roundDouble(averageBranchesLength(true),2) + "\n");
+
+			return text.toString();
+		} catch (Exception e) {
+			return "Can't print classification tree.";
+		}
+	}
+
 }

@@ -42,6 +42,7 @@ import weka.classifiers.trees.j48PartiallyConsolidated.C45ItPartiallyConsolidate
 import weka.classifiers.trees.j48PartiallyConsolidated.C45ItSizePartiallyConsolidatedPruneableClassifierTree;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45ModelSelectionExtended;
 import weka.classifiers.trees.j48PartiallyConsolidated.C45PartiallyConsolidatedPruneableClassifierTree;
+import weka.classifiers.trees.j48PartiallyConsolidated.C45PruneableClassifierTreeExtended;
 import weka.core.AdditionalMeasureProducer;
 import weka.core.Drawable;
 import weka.core.Instance;
@@ -397,9 +398,10 @@ public class J48PartiallyConsolidated
 	
 	/** Indicates the criteria used when choosing the next node to be developed in the construction 
 	 * of the partial consolidated tree: Size, Pre-order, Gain ratio...
-	 * The default value is the size of the nodes (number of instances they contain). 
+	 * The default is to use the Gain ratio obtained based on the set of samples generated 
+	 * for the construction of the consolidated tree. 
 	 */
-	private int m_PCTBpriorityCriteria = PriorCrit_Size;
+	private int m_PCTBpriorityCriteria = PriorCrit_GainratioSetSamples;
 	
 	/** Indicates the heuristic search algorithm used to determine the order in which the partial 
 	 * consolidated tree will be developed based on the priority criteria.
@@ -418,7 +420,7 @@ public class J48PartiallyConsolidated
 	 * and, independently, decide to prune (or not) the trees associated with the Bagging after the 
 	 * construction of the partial consolidated tree (with the original parameter).
 	 */
-	private boolean m_PCTBunprunedCT = true;
+	private boolean m_PCTBunprunedCT = false;
 	
 	/** Collapse partial Consolidated Tree (CT)?
 	 * Thus the original ‘collapseTree’ parameter (from J48) takes effect on the base trees of the Bagging
@@ -427,7 +429,7 @@ public class J48PartiallyConsolidated
 	 * and, independently, decide to collapse (or not) the trees associated with the Bagging after the 
 	 * construction of the partial consolidated tree (with the original parameter).
 	 */
-	private boolean m_PCTBcollapseCT = false;
+	private boolean m_PCTBcollapseCT = true;
 
 	/** Whether to prune the base trees without preserving the structure of the partially
 	 * consolidated tree.
@@ -435,7 +437,7 @@ public class J48PartiallyConsolidated
 	 * guaranteed never to exceed the structure of the partial consolidated tree. 
 	 * This parameter, if true, allows to freely prune each of these trees.
 	 */
-	protected boolean m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure = false;
+	protected boolean m_PCTBpruneBaseTreesWithoutPreservingConsolidatedStructure = true;
 
 	/** Visualize the base trees: None, only the first ten (if they exist) or all */
 	protected int m_PCTBvisualizeBaseTrees = Visualize_FirstOnes;
@@ -1117,7 +1119,7 @@ public class J48PartiallyConsolidated
 			/** Base tree vector */
 			if (m_Classifiers != null){
 				int maxBaseTrees;
-				st += line;
+				st += "\n" + line;
 				if ((m_PCTBvisualizeBaseTrees == Visualize_All) || (m_Classifiers.length <= 10)) {
 					maxBaseTrees = m_Classifiers.length;
 					st += "Set of " + m_Classifiers.length + " base " + (m_unpruned? "unpruned " : "") + "trees:\n";
@@ -1129,7 +1131,7 @@ public class J48PartiallyConsolidated
 				for (int iSample = 0; iSample < maxBaseTrees; iSample++){
 					st += line;
 					st += iSample + "-th base tree:\n";
-					st += m_Classifiers[iSample].toString();
+					st += ((C45PruneableClassifierTreeExtended)(m_Classifiers[iSample])).toString();
 				}
 			}
 		}

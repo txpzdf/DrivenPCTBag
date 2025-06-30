@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import weka.classifiers.trees.j48.C45PruneableClassifierTree;
 import weka.classifiers.trees.j48.ClassifierTree;
 import weka.classifiers.trees.j48.ModelSelection;
-import weka.classifiers.trees.j48PartiallyConsolidated.C45PartiallyConsolidatedPruneableClassifierTree;
 import weka.core.Instances;
 import weka.core.Utils;
 
@@ -194,7 +193,7 @@ public class C45ConsolidatedPruneableClassifierTree extends
 		else {
 			int maxLevels = -1;
 			for (int i = 0; i < m_sons.length; i++) {
-				int nl = ((C45PartiallyConsolidatedPruneableClassifierTree) m_sons[i]).numLevels();
+				int nl = ((C45ConsolidatedPruneableClassifierTree) m_sons[i]).numLevels();
 				if (nl > maxLevels)
 					maxLevels = nl;
 			}
