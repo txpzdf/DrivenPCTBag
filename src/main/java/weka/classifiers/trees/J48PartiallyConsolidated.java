@@ -137,9 +137,9 @@ import weka.core.TechnicalInformation.Type;
  * These indicate how consistently base trees adhere to the explanatory tree’s structure.<p/>
  * 
  * For more information, see:<p/>
- * Jes&uacute;s M. P&eacute;rez and Olatz Arbelaitz.  
- * "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning". Information Sciences (2025), submitted.
- * <a href="https://doi.org/10.1016/j.ins.2025.XX.XXX" target="_blank">doi:10.1016/j.ins.2025.XX.XXX</a>
+ * Jes&uacute;s M. P&eacute;rez and Olatz Arbelaitz and Jose Luis Jodra.  
+ * "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning". Information Sciences (2026), submitted.
+ * <a href="https://doi.org/10.1016/j.ins.2025.XX.XXX" target="_blank">doi:10.1016/j.ins.2026.XX.XXX</a>
  * Also see:<br/>
  * <br/>
  * Igor Ibarguren and Jes&uacute;s M. P&eacute;rez and Javier Muguerza and Olatz Arbelaitz and Ainhoa Yera.  
@@ -151,15 +151,15 @@ import weka.core.TechnicalInformation.Type;
 <!-- technical-bibtex-start -->
  * BibTeX:
  * <pre>
- * &#64;article{Perez2025,
+ * &#64;article{Perez2026,
  *    title = "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning",
  *    journal = "Information Sciences (submitted)",
  *    volume = "",
  *    number = "",
  *    pages = "1 - X",
- *    year = "2025",
- *    doi = "10.1016/j.ins.2025.XX.XXX",
- *    author = "Jes\'us M. P\'erez and Olatz Arbelaitz"
+ *    year = "2026",
+ *    doi = "10.1016/j.ins.2026.XX.XXX",
+ *    author = "Jes\'us M. P\'erez and Olatz Arbelaitz and Jose Luis Jodra"
  * }
  * </pre>
  * <p/>
@@ -484,13 +484,13 @@ public class J48PartiallyConsolidated
 		TechnicalInformation 	result;
 
 		result = new TechnicalInformation(Type.ARTICLE);
-		result.setValue(Field.AUTHOR, "Jesús M. Pérez and Olatz Arbelaitz");
-		result.setValue(Field.YEAR, "2025");
+		result.setValue(Field.AUTHOR, "Jesús M. Pérez and Olatz Arbelaitz and Jose Luis Jodra");
+		result.setValue(Field.YEAR, "2026");
 		result.setValue(Field.TITLE, "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning");
 	    result.setValue(Field.JOURNAL, "Information Sciences (submitted)");
 	    result.setValue(Field.VOLUME, "");
 	    result.setValue(Field.PAGES, "1-XX");
-	    result.setValue(Field.URL, "https://doi.org/10.1016/j.ins.2025.XX.XXX");
+	    result.setValue(Field.URL, "https://doi.org/10.1016/j.ins.2026.XX.XXX");
 
 	    TechnicalInformation additional = new TechnicalInformation(Type.ARTICLE);
 	    additional.setValue(Field.AUTHOR, "Igor Ibarguren and Jesús M. Pérez and Javier Muguerza and Olatz Arbelaitz and Ainhoa Yera");
