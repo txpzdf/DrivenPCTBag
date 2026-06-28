@@ -449,6 +449,18 @@ public class J48PartiallyConsolidated
 	 * */
 	protected ClassifierTree[] m_Classifiers;
 
+	public J48PartiallyConsolidated() {
+		super();
+		/* Initialising the J48Consolidated options to configure the resampling method (RM) 
+		 * for generating samples to be used in the consolidation process
+		 * */
+		m_RMnumberSamplesHowToSet = J48Consolidated.NumberSamples_FixedValue;
+		m_RMnumberSamples = (float)50.0; // 50 samples 
+		m_RMreplacement = true;		// Bootstrap samples
+		m_RMbagSizePercent = 100;	// 100% for Bootstrap samples
+		m_RMnewDistrMinClass = (float)-1; // free for Bootstrap samples
+	}
+
 	/**
 	 * Returns a string describing the classifier
 	 * @return a description suitable for
@@ -672,6 +684,43 @@ public class J48PartiallyConsolidated
 	 *
 	 * Valid options are: <p>
 	 * 
+	 * Options to set the Resampling Method (RM) for the generation of samples
+	 *  to use in the consolidation process<br/>
+	 * =================================================================== 
+	 * <pre> -RM-C
+	 *  Determines that the way to set the number of samples to be generated will be based on
+	 *  a coverage value as a percent. In the case this option is not set, the number of samples
+	 *  will be determined using a fixed value. 
+	 *  (Not set by default)</pre>
+	 * 
+	 * <pre> -RM-N &lt;number of samples&gt;
+	 *  Number of samples to be generated for use in the construction of the consolidated tree.
+	 *  It can be set as a fixed value or based on a coverage value as a percent, when -RM-C option
+	 *  is used, which guarantees the number of samples necessary to cover adequately the examples 
+	 *  of the original sample
+	 *  (default 50 for a fixed value (or 99% for the case based on a coverage value))</pre>
+	 * 
+	 * <pre> -RM-R
+	 *  Determines whether or not replacement is used when generating the samples.
+	 *  (default true for Bootstrap samples)</pre>
+	 * 
+	 * <pre> -RM-B &lt;Size of each sample(&#37;)&gt;
+	 *  Size of each sample(bag), as a percentage of the training set size.
+	 *  Combined with the option &lt;distribution minority class&gt; accepts:
+	 *  * -1 (sizeOfMinClass): The size of the minority class  
+	 *  * -2 (Max): Maximum size taking into account &lt;distribution minority class&gt;
+	 *  *           and using no replacement
+	 *  (default 100.0 for Bootstrap (use -2 for Balanced samples))</pre>
+	 *  
+	 * <pre> -RM-D &lt;distribution minority class&gt;
+	 *  Determines the new value of the distribution of the minority class, if we want to change it.
+	 *  It can be one of the following values:
+	 *  * A value between 0 and 100 to change the portion of minority class instances in the new samples
+	 *    (this option can only be used with binary problems (two classes datasets))
+	 *  * -1 (free): Works with the instances without taking into account their class  
+	 *  * -2 (stratified): Maintains the original class distribution in the new samples
+	 *  (default -1 for Bootstrap (use 50.0 for Balanced samples))</pre>
+	 * 
 	 * Options to Partially Consolidated Tree-Bagging (PCTBagging) multiple classifier<br/>
 	 * ============================================================================ 
 	 * <pre>-PCTB-C consolidation percent (or number of inner nodes) 
@@ -736,9 +785,52 @@ public class J48PartiallyConsolidated
 		// J48 and J48Consolidated options
 		// ===============================
 	    Enumeration<Option> en;
-	    en = super.listOptions();
+	    en = (new J48()).listOptions();
 	    while (en.hasMoreElements())
 	    	newVector.addElement((Option) en.nextElement());
+
+		// Options to set the Resampling Method (RM) for the generation of samples
+		//  to use in the consolidation process
+		// =========================================================================
+		newVector.
+		addElement(new Option("\tSet the number of samples to be generated based on a coverage value\n" +
+				"\tas a percentage. If not set, the number of samples will be determined using a \n"	+
+				"\tfixed value (by default).",
+				"RM-C", 0, "-RM-C"));
+		newVector.
+		addElement(new Option("\tNumber of samples to be generated for the use in the construction of the\n" +
+				"\tconsolidated tree.\n" +
+				"\tIt can be set as a fixed value or based on a coverage value as a percentage, \n" +
+				"\twhen -RM-C option is used, which guarantees the number of samples necessary \n" +
+				"\tto adequately cover the examples of the original sample.\n" +
+				"\t(default: 50 for a fixed value (use " + Utils.doubleToString(m_coveragePercent,0) + "% for the case based on a coverage value))",
+				"RM-N", 1, "-RM-N <Number of samples>"));
+		newVector.
+		addElement(new Option("\tUse replacement to generate the set of samples\n" +
+				"\t(default true for Bootstrap samples)",
+				"RM-R", 0, "-RM-R"));
+		newVector.
+		addElement(new Option("\tSize of each sample(bag), as a percentage of the training set size.\n" +
+				"\tCombined with the option <distribution minority class> accepts:\n" +
+				"\t * -1 (sizeOfMinClass): The size of the minority class\n" +
+				"\t * -2 (maxSize): Maximum size taking <distribution minority class>\n" +
+				"\t             into account and using no replacement\n" +
+				"\t(default 100.0 for Bootstrap (use -2 for Balanced samples))",
+				"RM-B", 1, "-RM-B <Size of each sample(%)>"));
+		newVector.
+		addElement(new Option(
+				"\tDetermines the new value of the distribution of the minority class.\n" +
+						"\tIt can be one of the following values:\n" +
+						"\t * A value between 0 and 100 to change the portion of minority class\n" +
+						"\t              instances in the new samples\n" +
+						"\t   (If the dataset is multi-class, only the special value 50.0 will\n" +
+						"\t              be accepted to balance the classes)\n" +
+						"\t * -1 (free): Works with the instances without taking their class\n" +
+						"\t              into account\n" +
+						"\t * -2 (stratified): Maintains the original class distribution in the\n" +
+						"\t              new samples\n" +
+						"\t(default -1 for Bootstrap (use 50.0 for Balanced samples))",
+						"RM-D", 1, "-RM-D <distribution minority class>"));
 
 		// Options to leave partially consolidated the built consolidated tree (PCTB)
 		// =========================================================================
@@ -1669,6 +1761,71 @@ public class J48PartiallyConsolidated
 	public boolean getPCTBprintExplanationMeasuresBaseTrees() {
 
 		return m_PCTBprintExplanationMeasuresBaseTrees;
+	}
+	
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String RMnumberSamplesHowToSetTipText() {
+		return "Way to set the number of samples to be generated:\n" +
+				" · using a fixed value which directly indicates the number of samples to be generated (by default)\n" +
+				" · based on a coverage value as a percentage";
+	}
+
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String RMnumberSamplesTipText() {
+		return "Number of samples to be generated for the use in the consolidation process (fixed value) or based on a coverage value as a %:\n" +
+				" · if RMnumberSamplesHowToSet == " + (new SelectedTag(NumberSamples_FixedValue,TAGS_WAYS_TO_SET_NUMBER_SAMPLES)).getSelectedTag().getReadable() + ":\n" +
+				"    A positive value which directly indicates the number of samples to be generated\n" + 
+				" · if RMnumberSamplesHowToSet == " + (new SelectedTag(NumberSamples_BasedOnCoverage,TAGS_WAYS_TO_SET_NUMBER_SAMPLES)).getSelectedTag().getReadable() + ":\n" +
+				"    A positive value as a percentage, the coverage value, which guarantees the number of samples necessary\n" +
+				"    to adequately cover the examples of the original sample\n" +
+				" (default: 50 for a fixed value (or " + Utils.doubleToString(m_coveragePercent,0) + "% for the case based on a coverage value))";
+	}
+
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String RMreplacementTipText() {
+		return "Whether replacement is performed to generate the set of samples\n" +
+				" (default true for Bootstrap samples)";
+	}
+
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String RMbagSizePercentTipText() {
+		return "Size of each sample(bag), as a percentage of the training set size (or -1 (sizeOfMinClass) or -2 (maxSize);\n" +
+				"Combined with the option <distribution minority class>, RMnewDistrMinClass, accepts:\n" +
+				" · -1 (sizeOfMinClass): The size of the minority class\n" +
+				" · -2 (maxSize): Maximum size taking <distribution minority class> into account\n" +
+				"             and using no replacement\n" +
+				" (default 100% for Bootstrap (use -2 for Balanced samples))";
+	}
+
+	/**
+	 * Returns the tip text for this property
+	 * @return tip text for this property suitable for
+	 * displaying in the explorer/experimenter gui
+	 */
+	public String RMnewDistrMinClassTipText() {
+		return "Determines the new value of the distribution of the minority class, if we want to change it (or -1 (free) or -2 (stratified));\n" +
+				"It can be one of the following values:\n" +
+				" · A value between 0 and 100 to change the portion of minority class instances in the new samples\n" +
+				"   (If the dataset is multi-class, only the special value 50 will be accepted to balance the classes)\n" +
+				" · -1 (free): Works with the instances without taking their class into account\n" +  
+				" · -2 (stratified): Maintains the original class distribution in the new samples\n" +
+				" (default -1 for Bootstrap (use 50 for Balanced samples))";
 	}
 
 }
