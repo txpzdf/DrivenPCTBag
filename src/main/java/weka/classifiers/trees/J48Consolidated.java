@@ -59,13 +59,13 @@ import weka.gui.ProgrammaticProperty;
  * Jes&uacute;s M. P&eacute;rez and Javier Muguerza and Olatz Arbelaitz and Ibai Gurrutxaga and Jos&eacute; I. Mart&iacute;­n.  
  * "Combining multiple class distribution modified subsamples in a single tree". Pattern Recognition Letters (2007), 28(4), pp 414-422.
  * <a href="http://dx.doi.org/10.1016/j.patrec.2006.08.013" target="_blank">doi:10.1016/j.patrec.2006.08.013</a>
- * <p/>
+ * <br/>
  * A new way has been added to determine the number of samples to be used in the consolidation process which guarantees the minimum percentage, the coverage value, of the examples of the original sample to be contained by the set of built subsamples. For more information, see:<br/>
  * <br/>
  * Igor Ibarguren and Jes&uacute;s M. P&eacute;rez and Javier Muguerza and Ibai Gurrutxaga and Olatz Arbelaitz.  
  * "Coverage-based resampling: Building robust consolidated decision trees". Knowledge Based Systems (2015), Vol. 79, pp 51-67.
  * <a href="http://dx.doi.org/10.1016/j.knosys.2014.12.023" target="_blank">doi:10.1016/j.knosys.2014.12.023</a>
- * <p/>
+ * <br/>
 <!-- globalinfo-end -->
  *
 <!-- technical-bibtex-start -->
@@ -82,7 +82,7 @@ import weka.gui.ProgrammaticProperty;
  *    author = "Jes\'us M. P\'erez and Javier Muguerza and Olatz Arbelaitz and Ibai Gurrutxaga and Jos\'e I. Mart\'i­n"
  * }
  * </pre>
- * <p/>
+ * <br/>
  * <pre>
  * &#64;article{Ibarguren2015,
  *    title = "Coverage-based resampling: Building robust consolidated decision trees",
@@ -94,11 +94,11 @@ import weka.gui.ProgrammaticProperty;
  *    author = "Igor Ibarguren and Jes\'us M. P\'erez and Javier Muguerza and Ibai Gurrutxaga and Olatz Arbelaitz"
  * }
  * </pre>
- * <p/>
+ * <br/>
 <!-- technical-bibtex-end -->
  * *************************************************************************************<br/>
 <!-- options-start -->
- * Valid options are: <p/>
+ * Valid options are: <br/>
  * 
  * J48 options <br/>
  * ==========
@@ -1115,7 +1115,7 @@ TechnicalInformationHandler {
 	 * Parses a given list of options.
 	 * 
    <!-- options-start -->
-	 * Valid options are: <p/>
+	 * Valid options are: <br/>
 	 * 
 	 * J48 options<br/>
 	 * =============<br/>
