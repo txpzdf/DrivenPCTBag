@@ -40,13 +40,13 @@ import weka.core.TechnicalInformation.Type;
 
 /**
  * <!-- globalinfo-start -->
- * Class for extracting the main descriptive characteristics of a dataset based on WEKA's simplest classifier, ZeroR.<p/>
- * When used as a classification algorithm in the WEKA's Experimenter (located in the "rules" group), it returns the descriptive features (number of classes, number of attributes...) of a set of datasets as if they were metrics (Comparison field) used to evaluate the goodness of the classifier (like Percent_correct, Area_under_ROC, Elapsed_Time_training...).<p/>
- * For proper results configuration (Setup tab of the Experimenter), it's recommended to set the 'Experiment Type' to "Train/Test Percentage Split (order preserved)" with 100% 'Train Percentage'.
- * This ensures measures like Number_of_training_instances or NumMissingValuesDataset aren't affected by Train/Test data splits of the default 'Cross-validation' option.<p/>
- * To obtain research-ready results, specify 'CSV file' as 'Results Destination' and provide a filename. After running the experiment, the generated CSV can be opened in spreadsheet software, displaying datasets in rows and their complete features (plus ZeroR metrics) in columns - similar to the dataset description tables commonly found in machine learning publications.<p/>
+ * <p>Class for extracting the main descriptive characteristics of a dataset based on WEKA's simplest classifier, ZeroR.</p>
+ * <p>When used as a classification algorithm in the WEKA's Experimenter (located in the "rules" group), it returns the descriptive features (number of classes, number of attributes...) of a set of datasets as if they were metrics (Comparison field) used to evaluate the goodness of the classifier (like Percent_correct, Area_under_ROC, Elapsed_Time_training...).</p>
+ * <p>For proper results configuration (Setup tab of the Experimenter), it's recommended to set the 'Experiment Type' to "Train/Test Percentage Split (order preserved)" with 100% 'Train Percentage'.</p>
+ * <p>This ensures measures like Number_of_training_instances or NumMissingValuesDataset aren't affected by Train/Test data splits of the default 'Cross-validation' option.</p>
+ * <p>To obtain research-ready results, specify 'CSV file' as 'Results Destination' and provide a filename. After running the experiment, the generated CSV can be opened in spreadsheet software, displaying datasets in rows and their complete features (plus ZeroR metrics) in columns - similar to the dataset description tables commonly found in machine learning publications.</p>
  * <br/> 
- * List of extracted characteristics (all starting with “measure” due to WEKA naming convention):<p/> 
+ * List of extracted characteristics (all starting with “measure” due to WEKA naming convention):<br/> 
  * <ul>
  * <li><b>NumAttributes</b>: Number of attributes of the dataset (without class)</li>
  * <li><b>NumNumericAttributes</b>: Number of numeric attributes of the dataset (without class)</li>
@@ -66,30 +66,30 @@ import weka.core.TechnicalInformation.Type;
  * <li><b>ImbalancedRatio</b>: Imbalanced Ratio (IR)</li>
  * </ul>
  * This class was used in the following paper where an extensive experimentation was carried out with 96 different datasets:<br/>
- * Jes&uacute;s M. P&eacute;rez and Olatz Arbelaitz.  
- * "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning". Information Sciences (2025), submitted.
- * <a href="https://doi.org/10.1016/j.ins.2025.XX.XXX" target="_blank">doi:10.1016/j.ins.2025.XX.XXX</a>
- * <p/>
+ * Jes&uacute;s M. P&eacute;rez and Olatz Arbelaitz and Jose Luis Jodra.  
+ * "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning". Information Sciences (2026), submitted.
+ * <a href="https://doi.org/10.1016/j.ins.2026.XX.XXX" target="_blank">doi:10.1016/j.ins.2026.XX.XXX</a>
+ * <br/>
  * <!-- globalinfo-end -->
  * <!-- technical-bibtex-start -->
  * BibTeX:
  * <pre>
- * &#64;article{Perez2025,
+ * &#64;article{Perez2026,
  *    title = "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning",
  *    journal = "Information Sciences (submitted)",
  *    volume = "",
  *    number = "",
  *    pages = "1 - X",
- *    year = "2025",
- *    doi = "10.1016/j.ins.2025.XX.XXX",
- *    author = "Jes\'us M. P\'erez and Olatz Arbelaitz"
+ *    year = "2026",
+ *    doi = "10.1016/j.ins.2026.XX.XXX",
+ *    author = "Jes\'us M. P\'erez and Olatz Arbelaitz and Jose Luis Jodra"
  * }
  * </pre>
- * <p/>
+ * <br/>
  * <!-- technical-bibtex-end -->
  * *************************************************************************************<br/>
  * <!-- options-start --> Valid options are:
- * <p/>
+ * <br/>
  * 
  * ZeroR options <br/>
  * =============
@@ -170,13 +170,13 @@ public class DatasetCharacteristicsExtractor
 		TechnicalInformation result;
 
 		result = new TechnicalInformation(Type.ARTICLE);
-		result.setValue(Field.AUTHOR, "Jesús M. Pérez and Olatz Arbelaitz");
-		result.setValue(Field.YEAR, "2025");
+		result.setValue(Field.AUTHOR, "Jesús M. Pérez and Olatz Arbelaitz and Jose Luis Jodra");
+		result.setValue(Field.YEAR, "2026");
 		result.setValue(Field.TITLE, "Multi-Criteria Node Selection in Direct PCTBagging: Balancing Interpretability and Accuracy with Bootstrap Sampling and Unrestricted Pruning");
 	    result.setValue(Field.JOURNAL, "Information Sciences (submitted)");
 	    result.setValue(Field.VOLUME, "");
 	    result.setValue(Field.PAGES, "1-XX");
-	    result.setValue(Field.URL, "https://doi.org/10.1016/j.ins.2025.XX.XXX");
+	    result.setValue(Field.URL, "https://doi.org/10.1016/j.ins.2026.XX.XXX");
 
 		return result;
 	}

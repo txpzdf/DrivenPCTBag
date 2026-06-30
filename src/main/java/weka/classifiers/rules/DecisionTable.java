@@ -63,7 +63,7 @@ import weka.filters.unsupervised.attribute.Remove;
  * <br/>
  * Ron Kohavi: The Power of Decision Tables. In: 8th European Conference on
  * Machine Learning, 174-189, 1995.
- * <p/>
+ * <br/>
  * <!-- globalinfo-end -->
  * 
  * <!-- technical-bibtex-start --> BibTeX:
@@ -78,11 +78,11 @@ import weka.filters.unsupervised.attribute.Remove;
  *    year = {1995}
  * }
  * </pre>
- * <p/>
+ * <br/>
  * <!-- technical-bibtex-end -->
  * 
  * <!-- options-start --> Valid options are:
- * <p/>
+ * <br/>
  * 
  * <pre>
  * -S &lt;search method specification&gt;
